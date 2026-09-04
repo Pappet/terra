@@ -20,21 +20,33 @@ DoD erfüllt: Strassen bauen/abrissen per Drag mit Bau-/Unterhaltskosten; drei T
 Kapazität/Tempo; Grid-Graph + A* mit Cache; Route + Reisezeit sichtbar (Overlay + Infozeile).
 Tasks: M2.1 Datenmodell · M2.2 A*+Cache · M2.3 Reisezeit+Route-Action · M2.4 Werkzeug-UI · M2.5 Unterhalt.
 
-## M3 – Siedlung (AKTUELL)
+## M3 – Siedlung (ABGESCHLOSSEN)
+
+DoD erfüllt: Stadtgründung per Werkzeug; Zonen R/C/I im Stadtradius; Gebäude entstehen
+und verfallen nach Nachfrage, Strassenanschluss und Lage; gezonte angeschlossene Stadt
+wächst von selbst (DoD-Test m3.proof.test.ts).
+Tasks: M3.1 Städte-SoA · M3.2 Zonen+Gebäude · M3.3 Nachfrage · M3.4 Wachstums-Tick ·
+M3.5 Panel/Werkzeug · M3.6 Wachstums-Nachweis.
+
+## M4 – Menschen (AKTUELL)
 
 DoD:
-- Stadtgründung an beliebiger Stelle (auf Land, per Werkzeug).
-- Zonen (Wohnen/Gewerbe/Industrie) innerhalb eines Stadtradius.
-- Gebäude entstehen und verfallen abhängig von Nachfrage, Strassenanschluss und Lage.
-- Eine gezonte, angeschlossene Stadt wächst über die Zeit von selbst.
+- Bevölkerung als Kohorten (Alter, Bildung, Einkommen).
+- Arbeitsplätze; Zuweisung Wohnort→Arbeitsplatz über den Graphen.
+- Reisezeit und Stau wirken auf die Zuweisung zurück.
+- Zufriedenheit, Zuzug und Wegzug.
+- Pendeln über Stadtgrenzen hinweg ist ausdrücklich erlaubt; Pendleraufkommen im
+  Overlay sichtbar und reagiert auf neue Strassen.
+- DoD: Zwei nahe Städte teilen sich einen Arbeitsmarkt.
 
 Tasks:
-- [x] M3.1 Städte-Datenmodell: cities als SoA (IDs, Position, Name), Action foundCity
-- [x] M3.2 Zonen als Layer + Zonen-Werkzeug/Actions, Gebäude-Datenmodell (SoA)
-- [x] M3.3 Nachfrage-Modell (R/C/I im Gleichgewicht, Wachstumsdruck aus Anschluss/Lage)
-- [x] M3.4 Gebäude-Entstehung/-Verfall pro Tick (gezont + angeschlossen -> Bau; ohne Anschluss -> Verfall)
-- [x] M3.5 Stadt-Panel (Bevölkerung/Zonen/Gebäude), Debug-Overlay Zonen/Gebäude, Savegame
-- [~] M3.6 Wachstums-Nachweis: gezonte angeschlossene Stadt wächst; nicht angeschlossene schrumpft
+- [~] M4.1 Kohorten-Datenmodell: pro Stadt Alters-/Bildungs-/Einkommens-Buckets (TypedArrays), Savegame v6
+- [ ] M4.2 Bevölkerungsdynamik: Alterung, Geburten/Sterbefälle, Wohnkapazität begrenzt
+- [ ] M4.3 Arbeitsplätze aus Gebäuden (R/C/I), Erwerbsquote, Zuweisung Wohnort->Job über A*
+- [ ] M4.4 Pendler-Modell: Job-Zuweisung über Stadtgrenzen nach Reisezeit; Stau/Kapazität dämpft
+- [ ] M4.5 Zufriedenheit + Zuzug/Wegzug (reagiert auf Jobs, Pendelzeit, Wohnraum)
+- [ ] M4.6 Pendler-Overlay (Flüsse zwischen Städten), Reaktivität auf neue Strassen getestet
+- [ ] M4.7 DoD-Nachweis: zwei nahe Städte teilen sich einen Arbeitsmarkt (deterministisch)
 
 ## M4 – Menschen (nächster Meilenstein, noch nicht zerlegt)
 

@@ -1,5 +1,11 @@
 # JOURNAL
 
+## 2026-03-05 – M3.6 Wachstums-Nachweis + M3-Abschluss
+**Gebaut:** Der DoD-Test in einer Welt mit zwei Städten: Stadt A (Strasse + 2 Wohnzonen) wächst in 800 Ticks von selbst (≥ 2 Häuser, Einwohner > 0); Stadt B (Startbestand ohne Anschluss) schrumpft vollständig auf 0. Savegame-Replay über 50 Ticks bleibt identitätsgetreu. 144 Tests grün, Build grün. **M3 ist damit fertig.**
+**Entscheidungen:**
+- Test sucht Stadt-B-Spot mit absteigenden Distanz-Alternativen (kleine Karten haben nicht immer Land in 28+ Tiles Distanz – gleiche Lehre wie in M1).
+**Offen:** Manuelle Browser-Abnahme durch Peter; M4 (Menschen) beginnt.
+
 ## 2026-03-05 – M3.5 Gründen-Werkzeug + Stadt-Panel
 **Gebaut:** Werkzeug "Gründen" (Klick auf Land -> foundCity mit Auto-Name), Stadt-Panel links: pro Stadt Name, Einwohner (Vollbelegung), Jobs, Gebäudezahl R/C/I und Nachfrage-Prozente; Klick springt mit der Kamera zum Zentrum; Panel aktualisiert 4×/s, verschwindet ohne Städte.
 **Entscheidungen:** Panel liest Sim-Zustand direkt (computeStats/computeDemand) statt Snapshot-Structs – Lesen ist nebenläufig gefahrlos, solange nur im UI-Frame zugegriffen wird; Worker-Umzug (M5) führt dann echte Snapshot-Grenzen ein.

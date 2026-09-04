@@ -14,6 +14,7 @@ import { base64ToBytes, bytesToBase64, bytesToInt16, int16ToBytes } from './base
 import { Buildings } from './buildings';
 import { Cities } from './cities';
 import { PathFinder } from './pathfinding';
+import { Population } from './population';
 import { Rng } from './rng';
 import { runGrowthTick } from './growth';
 import { SIM_CONFIG } from '../data/config';
@@ -33,7 +34,7 @@ export interface WorldLayers extends DerivedLayers {
   readonly deposits: Uint8Array;
 }
 
-/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 5). */
+/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 6). */
 export interface SerializedWorld {
   saveVersion: number;
   seed: number;
@@ -47,6 +48,7 @@ export interface SerializedWorld {
   buildings: ReturnType<Buildings['serialize']>;
   zoneType: string;
   zoneCity: string;
+  population: number[][];
   layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
@@ -84,6 +86,8 @@ export class World {
   buildingIndex: Int32Array;
   /** Pro Stadt (Index Stadt-ID - 1): gezonte, noch unbebaute Tile-Indizes. */
   cityZoneTiles: number[][];
+  /** Bevölkerung als Kohorten pro Stadt. */
+  population: Population;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
@@ -119,6 +123,7 @@ export class World {
     this.zoneCity = new Int16Array(width * height);
     this.buildingIndex = new Int32Array(width * height);
     this.cityZoneTiles = [];
+    this.population = new Population();
   }
 
   /** Zonen-Tile-Listen aus den Layern rekonstruieren (Laden, Aktionen pflegen sie sonst). */
@@ -225,7 +230,13 @@ export class World {
       }
     }
     runGrowthTick(this, this.rng);
+    this.syncPopulation();
     this.tick++;
+  }
+
+  /** Hält Bevölkerungs-Vektoren mit der Stadtanzahl synchron (Gründung/Laden). */
+  private syncPopulation(): void {
+    this.population.ensureCity(this.cities.count);
   }
 
   /** Summiert Unterhaltskosten über alle Strassentiles (nur bei Änderungen). */
@@ -291,6 +302,7 @@ export class World {
       buildings: this.buildings.serialize(),
       zoneType: bytesToBase64(this.zoneType),
       zoneCity: bytesToBase64(int16ToBytes(this.zoneCity)),
+      population: this.population.serialize(),
       layers,
       rngState: this.rng.stateU32,
     };
@@ -330,6 +342,10 @@ export class World {
     world.cities = Cities.deserialize(d.cities);
     world.buildings = Buildings.deserialize(d.buildings);
     world.zoneType = decodeLayer(d.zoneType, 'zoneType', size, 0, 3);
+    world.population = Population.deserialize(d.population);
+    if (world.population.perCity.length < world.cities.count) {
+      throw new Error('Savegame: Bevölkerungsvektoren fehlen für geladene Städte');
+    }
     const zoneCityBytes = base64ToBytes(typeof d.zoneCity === 'string' ? d.zoneCity : '');
     if (zoneCityBytes.length !== size * 2) {
       throw new Error(`Savegame: zoneCity hat ${zoneCityBytes.length} Bytes, erwartet ${size * 2}`);
@@ -418,12 +434,13 @@ export function equalWorlds(a: World, b: World): boolean {
       if (x[i] !== y[i]) return false;
     }
   }
-  // Städte & Gebäude (SoA) + Zonen-Besitz + Gebäude-Index.
+  // Städte & Gebäude (SoA) + Zonen-Besitz + Gebäude-Index + Bevölkerung.
   if (
     a.cities.count !== b.cities.count ||
     a.buildings.count !== b.buildings.count ||
     JSON.stringify(a.cities.serialize()) !== JSON.stringify(b.cities.serialize()) ||
-    JSON.stringify(a.buildings.serialize()) !== JSON.stringify(b.buildings.serialize())
+    JSON.stringify(a.buildings.serialize()) !== JSON.stringify(b.buildings.serialize()) ||
+    JSON.stringify(a.population.serialize()) !== JSON.stringify(b.population.serialize())
   ) {
     return false;
   }
