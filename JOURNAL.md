@@ -1,6 +1,19 @@
 # JOURNAL
 
-## 2026-03-05 – M1.5 Vorkommen
+## 2026-03-05 – M1.6 Layer im WorldState + Savegame v2
+**Gebaut:** `World` generiert im Konstruktor die komplette Welt (Terrain -> Derived -> Deposits -> Surface-Mapping zu Tile-IDs); alle sechs Layer liegen als Uint8Arrays im Zustand. Savegame **v2**: Layer und Tiles als base64-Strings (eigene DOM-freie Implementierung in `sim/base64.ts`), harte Validierung beim Laden (Längen, Wertebereiche, unbekannte Vorkommens-Bits). Neue Task-ID "Wald" in der Palette-Tabelle. 512er-Savegame < 5 MB.
+**Entscheidungen:**
+- Savegame v1 wird klar abgelehnt (Versionsfehler) – M0-Saves sind Wegwerf-State, Migration nicht wert.
+- Der base64-Umstieg kam früher als geplant (BACKLOG sagte M1 voraus): 6 Layer als JSON-Zahl-Arrays wären ~10 MB gewesen, base64 hält sie bei ~2 MB.
+- Konstruktor generiert standardmässig – gleicher Seed, gleiche Welt, strukturell garantiert. Kleine Karten (Weltgrösse < Wellenlänge) können im Ozean liegen; Tests nutzen deshalb die Spielgrösse für Land-Annahmen.
+**Offen:** nichts.
+
+## 2026-03-05 – M1.7 Overlays + Minimap
+**Gebaut:** Overlay-Definitionen in `/src/data/overlays.ts` (Oberfläche, Höhe, Wasser, Fruchtbarkeit, Wald, Vorkommen), `render/overlay.ts` füllt 1px/Tile-RGBA (Gradient-LUT, Bitmask-Mischung), Renderer-Cache jetzt über ImageData statt 262k fillRects, `render/minimap.ts` (Sichtfeld-Rechteck, Klick/Drag-Sprung), HUD-Overlay-Panel + Taste `o` zum Durchschalten. Karte auf 512x512.
+**Entscheidungen:**
+- ImageData-Ansatz ersetzt fillRect-Kaskade: Native-Auflösung 1px/Tile, Nearest-Scale auf Cache-Grösse – schneller und ohne Kantenritze.
+- Minimap rendert ihr eigenes ImageData (gleicher Code-Pfad via fillTileColors) und invalidate auf tileRev|overlay.
+**Offen:** nichts.
 **Gebaut:** `generateDeposits`: Bitmaske (Stein/Ton/Kohle/Eisen/Öl), pro Rohstoff eigenes fBm-Feld auf Land-Tiles im Höhenband; Placement per **Perzentil** (oberster `rate`-Anteil der geeigneten Tiles), quantisiert über sortierte Feldwerte. Tests: Reproduzierbarkeit, nur definierte Bits, nur auf Land, Menge pro Rohstoff (0.1–12% des Landes), Klumpigkeit (grösste Komponente ≥ 15%), 512er-Perf.
 **Entscheidungen:**
 - Absolute fBm-Schwellen verworfen: Nicht kalibrierbar über Seeds (Stein @ seed 1: 0 Treffer), weil Value-Noise sich um 0.5 konzentriert. Perzentil macht die Menge zur Designgrösse; die räumliche Glätte liefert weiterhin regionale Klumpen.
