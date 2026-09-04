@@ -10,6 +10,7 @@ import { Minimap } from '../render/minimap';
 import { Renderer } from '../render/renderer';
 import { SimLoop } from '../sim/loop';
 import { computeDemand, computeStats } from '../sim/demand';
+import { computeSatisfaction } from '../sim/demographics';
 import { World } from '../sim/world';
 import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '../persist/save';
 import { Hud } from './hud';
@@ -211,6 +212,7 @@ function updateCityPanel(): void {
       name: currentWorld.cities.names[c - 1] ?? `Stadt ${c}`,
       residents,
       jobs,
+      satisfaction: computeSatisfaction(currentWorld, c),
       residential: demand.residential,
       commercial: demand.commercial,
       industrial: demand.industrial,

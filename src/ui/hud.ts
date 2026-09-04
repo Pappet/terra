@@ -168,6 +168,7 @@ export class Hud {
       name: string;
       residents: number;
       jobs: number;
+      satisfaction: number;
       residential: number;
       commercial: number;
       industrial: number;
@@ -195,7 +196,7 @@ export class Hud {
         const row = document.createElement('div');
         row.className = 'city-row';
         row.textContent =
-          `${entry.name}: ${entry.residents} EW, ${entry.jobs} Jobs | ` +
+          `${entry.name}: ${entry.residents} EW, ${entry.jobs} Jobs, Zf ${Math.round(entry.satisfaction * 100)}% | ` +
           `R${entry.houses} C${entry.shops} I${entry.factories} | ` +
           `Nf ${Math.round(entry.residential * 100)}/${Math.round(entry.commercial * 100)}/${Math.round(entry.industrial * 100)}%`;
         row.title = 'Klicken: Kamera auf das Stadtzentrum';

@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M4.5 Zufriedenheit + Zuzug/Wegzug
+**Gebaut:** `computeSatisfaction` (0..1 aus Beschäftigungsanteil ×0.45, Pendelzeit ×0.25 gegen Toleranz 60 Ticks, Wohnraum ×0.3) und `runMigration` im Demografie-Intervall: Zuzug ab 0.6 in freie Wohnkapazität (junge Erwachsene, Bildung per RNG), Wegzug unter 0.35 proportional über alle Kohorten. Läuft über `World.settleResidents` (neue API, setzt commuteDirty). Tests: Zufriedenheits-Sensitivität (Jobs ↑, Überbevölkerung ↓), Zuzug wächst innerhalb Kapazität, Wegzug schrumpft, Determinismus.
+**Entscheidungen:**
+- Migration im selben Intervall wie Demografie: ein "Jahrestick", saubere Reihenfolge (Alterung → Geburten → Migration → Zuweisung).
+- Lehre (drittes Mal): feste Tile-Offsets auf generierten Karten treffen irgendwann Wasser. `findSpot`-Helper (freies Land + optional Strassenanschluss) ersetzt Offsets in den Demografie-Tests; growth.test hatte das Muster schon richtig.
+- Zwischenfall dokumentiert: Beim Nachziehen von M4.5 löschte ein Python-Slice versehentlich `runDemographicsTick` — Datei komplett neu geschrieben statt geflickt.
+**Offen:** nichts.
+
 ## 2026-03-05 – M4.4 Pendler-Korridorkapazität (Stau)
 **Gebaut:** `routeCapacity` (kleinste Korridorkapazität entlang des A*-Pfades; Strassentyp-Kapazität, offroad = Trampelpfad 2) deckelt den Pendlerfluss pro Städtepaar: `take = min(Jobs, Erwerbstätige, Korridor)`. Überlauf geht auf die nächstbessere Route oder bleibt arbeitslos. `MOVEMENT.offroadCapacity = 2` in data. Tests: Pfad deckelt bei 10, Chaussee hebt auf joblimitiert 80 (Reaktivität auf Strassenausbau), Trampelpfad trägt nur 2, Regressions-Tests auf Kapazität umgestellt (lineWorld mit Strassentyp-Parameter).
 **Entscheidungen:**

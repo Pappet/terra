@@ -92,9 +92,41 @@ export class Renderer {
       this.drawGrid(camera, world, topLeft.x, topLeft.y, mapWpx, mapHpx);
     }
     this.drawCityMarkers(camera, world);
+    if (overlayId === 'commute') {
+      this.drawCommuteLines(camera, world);
+    }
     ctx.strokeStyle = '#3d4652';
     ctx.lineWidth = 1;
     ctx.strokeRect(topLeft.x - 0.5, topLeft.y - 0.5, mapWpx + 1, mapHpx + 1);
+  }
+
+  /** Pendlerflüsse als Linien zwischen Stadtzentren; Strichstärke ∝ Fluss. */
+  private drawCommuteLines(camera: Camera, world: World): void {
+    const ctx = this.ctx;
+    const flows = world.commute?.flows;
+    if (flows === undefined) return;
+    for (let home = 1; home <= world.cities.count; home++) {
+      const row = flows[home - 1];
+      if (row === undefined) continue;
+      for (let job = 1; job <= world.cities.count; job++) {
+        const flow = row[job - 1] ?? 0;
+        if (flow <= 0 || home === job) continue;
+        const from = camera.worldToScreen(
+          (world.cities.x[home - 1] ?? 0) + 0.5,
+          (world.cities.y[home - 1] ?? 0) + 0.5,
+        );
+        const to = camera.worldToScreen(
+          (world.cities.x[job - 1] ?? 0) + 0.5,
+          (world.cities.y[job - 1] ?? 0) + 0.5,
+        );
+        ctx.strokeStyle = 'rgba(224, 138, 60, 0.75)';
+        ctx.lineWidth = Math.min(8, Math.max(1, Math.log2(1 + flow) * 1.5));
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.stroke();
+      }
+    }
   }
 
   /** Stadtzentren als Marker über dem Kartenbild. */

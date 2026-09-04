@@ -129,8 +129,9 @@ export function fillTileColors(world: World, overlayId: string, rgba: Uint8Clamp
       }
       return;
     }
+    case 'commute':
     case 'route': {
-      // Oberflächenbasis + Routen-Highlight
+      // Oberflächenbasis + Routen-Highlight (Pendler-Linien zeichnet der Renderer)
       const colors = TILE_TYPES.map((t) => hexToRgb(t.color));
       const route = world.route;
       const onPath = new Set<number>(route?.path ?? []);

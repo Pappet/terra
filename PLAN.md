@@ -44,8 +44,8 @@ Tasks:
 - [x] M4.2 Bevölkerungsdynamik: Alterung, Geburten/Sterbefälle, Wohnkapazität begrenzt
 - [x] M4.3 Arbeitsplätze aus Gebäuden (R/C/I), Erwerbsquote, Zuweisung Wohnort->Job über A*
 - [x] M4.4 Pendler-Modell: Job-Zuweisung über Stadtgrenzen nach Reisezeit; Stau/Kapazität dämpft
-- [~] M4.5 Zufriedenheit + Zuzug/Wegzug (reagiert auf Jobs, Pendelzeit, Wohnraum)
-- [ ] M4.6 Pendler-Overlay (Flüsse zwischen Städten), Reaktivität auf neue Strassen getestet
+- [x] M4.5 Zufriedenheit + Zuzug/Wegzug (reagiert auf Jobs, Pendelzeit, Wohnraum)
+- [~] M4.6 Pendler-Overlay (Flüsse zwischen Städten), Reaktivität auf neue Strassen getestet
 - [ ] M4.7 DoD-Nachweis: zwei nahe Städte teilen sich einen Arbeitsmarkt (deterministisch)
 
 ## M4 – Menschen (nächster Meilenstein, noch nicht zerlegt)

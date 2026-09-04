@@ -10,7 +10,8 @@ export type OverlayKind =
   | 'bitmask'
   | 'roads'
   | 'route'
-  | 'zones';
+  | 'zones'
+  | 'commute';
 
 export interface OverlayDef {
   readonly id: string;
@@ -30,6 +31,7 @@ export const OVERLAYS: readonly OverlayDef[] = [
   { id: 'surface', name: 'Oberfläche', kind: 'surface' },
   { id: 'roads', name: 'Strassen', kind: 'roads' },
   { id: 'zones', name: 'Zonen', kind: 'zones' },
+  { id: 'commute', name: 'Pendler', kind: 'commute' },
   { id: 'route', name: 'Route', kind: 'route' },
   { id: 'elevation', name: 'Höhe', kind: 'gradient', layer: 'elevation', min: '#0a0d12', max: '#e8e4d8' },
   { id: 'water', name: 'Wasser', kind: 'water' },
