@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M1.2 Höhen-Layer + Wasserlinie
+**Gebaut:** `generateTerrain(seed, w, h)`: fBm-Grundhöhe + Domain-Warp (zwei eigene fBm-Felder, organische Küsten) + Rand-Falloff, `elevation: Uint8Array` + `water: Uint8Array`. Parameter komplett in `/src/data/worldgen.ts`. Tests: Reproduzierbarkeit, Seed-Sensitivität, Rand-Ozean-Garantie, Wasseranteil, grösste zusammenhängende Landmasse (Flood-Fill), Höhen/Wasser-Konsistenz, 512x512-Performance < 1 s.
+**Entscheidungen:**
+- Rand-Falloff korrigiert: erst falsch ab Kartenmitte angewandt (86% Ozean); jetzt normierte Randdistanz mit Rampenbeginn bei `edgeFalloffStart` und 0 exakt an der Kante. Der Kartenrand ist immer Ozean – wichtig für M2/M6 (jede Binnenlage später über Wasser/Netz erreichbar).
+- Test "Zentrum ist Land" durch "grösste zusammenhängende Landmasse ≥ 12% der Karte" ersetzt – das ist die echte Spielanforderung (mehrere Städte auf einer Landmasse), keine Ästhetik-Annahme.
+- 512x512 liegt im Perf-Test klar unter 1 s (Weltgen ist Einmalkosten, Budget 16 ms gilt nur für Ticks).
+**Offen:** nichts.
+
 ## 2026-03-05 – M1.1 Noise-Basis
 **Gebaut:** `/src/worldgen/noise.ts`: `hash2` (32-Bit-Integer-Hash, Seed-abhängig), `valueNoise2` (quintisch interpoliert), `fbm2` (fBm mit gain/lacunarity, normalisiert, Offsets zur Feldtrennung). Tests: Determinismus, Wertebereich, Glattheit, Pin-Werte, exakte Oktaven-Identitäten.
 **Entscheidungen:**
