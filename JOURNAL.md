@@ -22,6 +22,8 @@
 **Offen:** nichts.
 
 ## 2026-03-05 – M0.4 Fixed-Tick-Loop
-**Gebaut:** `SimLoop` mit Akkumulator, injizierbarer Uhr (Browser: `performance.now`, Tests: manuelle Uhr), Geschwindigkeitsstufen 0/1/3/10, Catch-up-Deckel gegen Todesspirale, Dirty-Flag-Rückgabe pro `update()` fürs Rendering.
-**Entscheidungen:** Basis-Tickrate 20/s (in `/src/data`), max. 400 Ticks pro Frame; nach einer Pause wird die verstrichene Zeit gekappt, statt sie nachzuholen.
+**Gebaut:** `SimLoop` mit Akkumulator, injizierbarer Uhr (Browser: `performance.now`, Tests: manuelle Uhr), Geschwindigkeitsstufen 0/1/3/10, Catch-up-Deckel gegen Todesspirale, Tick-Zähler-Rückgabe pro `update()` fürs Rendering.
+**Entscheidungen:**
+- Basis-Tickrate 20/s (in `/src/data`), max. 400 Ticks pro Frame; nach langer Pause wird die verstrichene Zeit gekappt und der Rest verworfen, statt sie nachzuholen.
+- First-Frame-Guard: der erste `update()`-Aufruf setzt nur die Zeitbasis, die Zeitspanne zwischen Loop-Konstruktion und erstem Aufruf wird verworfen (schutz vor Phantom-Bursts; in Tests via Warm-up-Call berücksichtigt).
 **Offen:** nichts.
