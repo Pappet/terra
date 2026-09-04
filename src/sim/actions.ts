@@ -19,6 +19,8 @@ export interface ActionContext {
   treasury: number;
   /** Grund des letzten abgelehnten Calls (UI-Sichtbar), sonst null. */
   lastRejected: string | null;
+  /** Vom Tick auszuwertende Routenanfrage (Route wird nach den Actions berechnet). */
+  routeRequest: { from: number; to: number } | null;
 }
 
 export type GameAction =
@@ -27,7 +29,11 @@ export type GameAction =
   /** Strasse auf einem Land-Tile bauen (oder bestehende ausbauen). */
   | { kind: 'buildRoad'; x: number; y: number; road: number }
   /** Strasse abreissen (keine Erstattung). */
-  | { kind: 'demolishRoad'; x: number; y: number };
+  | { kind: 'demolishRoad'; x: number; y: number }
+  /** Route von->to berechnen lassen (Ergebnis: World.route, sichtbar im Overlay). */
+  | { kind: 'requestRoute'; from: number; to: number }
+  /** Angezeigte Route verwerfen. */
+  | { kind: 'clearRoute' };
 
 /**
  * Action anwenden. Liefert true, wenn sie ausgeführt wurde.
@@ -69,6 +75,16 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
       const { x, y } = action;
       if (!inBounds(ctx, x, y)) return true;
       ctx.roads[y * ctx.width + x] = 0;
+      return true;
+    }
+    case 'requestRoute': {
+      const { from, to } = action;
+      if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0) return true;
+      ctx.routeRequest = { from, to };
+      return true;
+    }
+    case 'clearRoute': {
+      ctx.routeRequest = { from: -1, to: -1 };
       return true;
     }
     default: {

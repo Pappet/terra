@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M2.2 Grid-Graph + A* mit Cache
+**Gebaut:** `PathFinder` mit Binär-Heap (lazy deletion, deterministischer Tie-Break über Node-Index), Octile-Heuristik geteilt durch beste Geschwindigkeit (zulässig -> optimal), Kantenkosten = 1/Tempo des Zielfelds (Strassentyp oder offroad), Wasser unpassierbar. Ergebnis-Cache mit Revisions-Schlüssel (World.tileRev) – Strassenänderungen invalidieren automatisch; Cache-Hits melden `visited: 0`. Bequemer Einzelfall `findPath()` ohne Cache-Wiederverwendung für Tests.
+**Entscheidungen:**
+- Cache schlüsselt über `rev:start:goal` und räumt komplett auf, wenn 512 Einträge überschritten sind (einfach und gutmütig; echtes LRU erst bei Bedarf).
+- Testdaten-Bugs zweimal selbst erwischt (undichte Wasserwand, 'R' statt Ziffer, eingeschlossener Start) – die Mini-Grid-Helfer zwingen zu exakten Karten.
+- Erwartungsfehler "0.25 pro offroad-Tile" vs. korrekt "4 Ticks pro offroad-Tile": Tempo ≠ Kosten; der Test dokumentiert jetzt die Formel.
+**Offen:** nichts.
+
 ## 2026-03-05 – M2.1 Strassen-Datenmodell
 **Gebaut:** `roads: Uint8Array` im WorldState, Strassentypen (Pfad/Strasse/Chaussee mit Baukosten, Unterhalt, Tempo, Kapazität) in `/src/data/roads.ts`, Actions `buildRoad`/`demolishRoad`, `treasury` mit Startkapital, `lastRejected` als deterministische Ablehnungs-Info fürs UI, Savegame **v3** (roads + treasury). applyAction bekam dafür einen `ActionContext` (strukturell erfüllt von World statt World-Import → keine zirkuläre Abhängigkeit).
 **Entscheidungen:**

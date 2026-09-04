@@ -10,11 +10,12 @@
  * Revisionsnummer (World.tileRev): sobald sich Strassen ändern, wird neu
  * gerechnet. DOM-frei und deterministisch (Fester Nachbar- und Tie-Break).
  */
-import { MOVEMENT, ROAD_BY_ID } from '../data/roads';
+import { MOVEMENT, ROAD_BY_ID, TERRAIN_OFFROAD_FACTOR } from '../data/roads';
 
 export interface PathfindingContext {
   readonly width: number;
   readonly height: number;
+  readonly tiles: Uint8Array;
   readonly water: Uint8Array;
   readonly roads: Uint8Array;
   /** Änderungsstand der fürs Pathfinding relevanten Daten (z.B. tileRev). */
@@ -65,7 +66,7 @@ export class PathFinder {
   }
 
   private compute(ctx: PathfindingContext, start: number, goal: number): PathResult {
-    const { width, height, water, roads } = ctx;
+    const { width, height, tiles, water, roads } = ctx;
     const size = width * height;
     this.ensureScratch(size);
     const gScore = this.gScore;
@@ -162,7 +163,7 @@ export class PathFinder {
           const n = ny * width + nx;
           if (closed[n] === 1) continue;
           if ((water[n] ?? 0) === 1) continue;
-          const speed = tileSpeed(roads[n] ?? 0);
+          const speed = tileSpeed(roads[n] ?? 0, tiles[n] ?? 0);
           const stepCost = 1 / speed;
           const tentative = gScore[cur]! + stepCost;
           if (tentative < gScore[n]!) {
@@ -199,9 +200,11 @@ function swap(a: number[], b: number[], i: number, j: number): void {
   b[j] = ti;
 }
 
-export function tileSpeed(roadId: number): number {
+export function tileSpeed(roadId: number, tileId = 0): number {
   const road = ROAD_BY_ID.get(roadId);
-  return road === undefined ? MOVEMENT.offroadSpeedTilesPerTick as number : road.speedTilesPerTick;
+  if (road !== undefined) return road.speedTilesPerTick;
+  const factor = TERRAIN_OFFROAD_FACTOR[tileId] ?? 1;
+  return (MOVEMENT.offroadSpeedTilesPerTick as number) * factor;
 }
 
 function bestRoadSpeed(): number {

@@ -12,12 +12,13 @@ function ctx(
   const size = width * height;
   const water = new Uint8Array(size);
   const roads = new Uint8Array(size);
+  const tiles = new Uint8Array(size).fill(1); // Gras
   for (let i = 0; i < size; i++) {
     const c = cells[i];
     if (c === '~') water[i] = 1;
     else if (c !== undefined && c !== '.') roads[i] = Number(c);
   }
-  return { width, height, water, roads, rev };
+  return { width, height, tiles, water, roads, rev };
 }
 
 const R = ROAD_TYPES[1]!; // Strasse, speed 1.0
@@ -99,16 +100,17 @@ describe('PathFinder-Cache', () => {
     const pf = new PathFinder();
     const water = new Uint8Array(25);
     const roads = new Uint8Array(25);
-    const c1: PathfindingContext = { width: 5, height: 5, water, roads, rev: 1 };
+    const tiles = new Uint8Array(25).fill(1);
+    const c1: PathfindingContext = { width: 5, height: 5, tiles, water, roads, rev: 1 };
     const first = pf.findPath(c1, 0, 24);
     expect(first!.visited).toBeGreaterThan(0);
 
-    const c1Again: PathfindingContext = { width: 5, height: 5, water, roads, rev: 1 };
+    const c1Again: PathfindingContext = { width: 5, height: 5, tiles, water, roads, rev: 1 };
     expect(pf.findPath(c1Again, 0, 24)!.visited).toBe(0);
 
     // Neue Strasse -> neue rev -> Neuverbuchung mit anderem Ergebnis (schneller)
     roads.fill(R.id);
-    const c2: PathfindingContext = { width: 5, height: 5, water, roads, rev: 2 };
+    const c2: PathfindingContext = { width: 5, height: 5, tiles, water, roads, rev: 2 };
     const recomputed = pf.findPath(c2, 0, 24);
     expect(recomputed!.visited).toBeGreaterThan(0);
     expect(recomputed!.timeTicks).toBeLessThan(first!.timeTicks);
@@ -118,10 +120,11 @@ describe('PathFinder-Cache', () => {
     const pf = new PathFinder();
     const water = new Uint8Array(25);
     const roads = new Uint8Array(25);
-    const c1: PathfindingContext = { width: 5, height: 5, water, roads, rev: 1 };
+    const tiles = new Uint8Array(25).fill(1);
+    const c1: PathfindingContext = { width: 5, height: 5, tiles, water, roads, rev: 1 };
     const slow = pf.findPath(c1, 0, 24)!;
     roads.fill(R.id);
-    const c2: PathfindingContext = { width: 5, height: 5, water, roads, rev: 2 };
+    const c2: PathfindingContext = { width: 5, height: 5, tiles, water, roads, rev: 2 };
     const fast = pf.findPath(c2, 0, 24)!;
     expect(fast.timeTicks).toBeLessThan(slow.timeTicks);
   });

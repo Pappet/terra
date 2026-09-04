@@ -9,8 +9,9 @@
  *
  * Der Konstruktor erzeugt die Welt prozedural (M1) – gleicher Seed, gleiche Welt.
  */
-import { applyAction, type GameAction } from './actions';
+import { applyAction, type ActionContext, type GameAction } from './actions';
 import { base64ToBytes, bytesToBase64 } from './base64';
+import { PathFinder } from './pathfinding';
 import { Rng } from './rng';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
@@ -67,10 +68,15 @@ export class World {
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
   lastRejected: string | null = null;
+  /** Angezeigte Route (Snapshot bei Anfragezeit, rev = tileRev dann). Transient, nicht im Savegame. */
+  route: { readonly path: readonly number[]; readonly timeTicks: number; readonly rev: number } | null = null;
+  /** Vom Tick auszuwertende Routenanfrage (ActionContext-Kontrakt). */
+  routeRequest: { from: number; to: number } | null = null;
   /** Erhöht sich bei jeder Änderung an sichtbaren Layerdaten (tiles/roads). */
   tileRev = 0;
 
   private rng: Rng;
+  private pathfinder = new PathFinder();
   private queue: GameAction[] = [];
 
   constructor(seed: number, width: number, height: number) {
@@ -92,18 +98,47 @@ export class World {
     this.queue.push(action);
   }
 
-  /** Ein Sim-Tick: wartende Actions anwenden, dann Uhr weitersetzen. */
+  /** Ein Sim-Tick: wartende Actions anwenden, Routenanfrage auswerten, Uhr weitersetzen. */
   update(): void {
     this.lastRejected = null;
+    let routeDirty = false;
     if (this.queue.length > 0) {
       for (const action of this.queue) {
         applyAction(this, action);
+        if (action.kind === 'requestRoute' || action.kind === 'clearRoute') routeDirty = true;
       }
       this.tileRev++;
       this.queue = [];
     }
+    if (routeDirty && this.routeRequest !== null) {
+      const { from, to } = this.routeRequest;
+      this.routeRequest = null;
+      if (from < 0 || to < 0) {
+        this.route = null;
+      } else {
+        const result = this.pathfinder.findPath(this.routeContext(), from, to);
+        this.route =
+          result === null || result.path.length === 0
+            ? null
+            : { path: result.path, timeTicks: result.timeTicks, rev: this.tileRev };
+      }
+    }
     // M2.5: Unterhaltskosten pro Tick verbuchen.
     this.tick++;
+  }
+
+  private routeContext(): ActionContext & { rev: number } {
+    return {
+      width: this.width,
+      height: this.height,
+      tiles: this.tiles,
+      water: this.layers.water,
+      roads: this.roads,
+      rev: this.tileRev,
+      treasury: this.treasury,
+      lastRejected: this.lastRejected,
+      routeRequest: this.routeRequest,
+    };
   }
 
   get rngStateU32(): number {
@@ -203,6 +238,15 @@ export function equalWorlds(a: World, b: World): boolean {
     a.tick !== b.tick || a.treasury !== b.treasury || a.rngStateU32 !== b.rngStateU32
   ) {
     return false;
+  }
+  // Route ist Teil des deterministischen Zustands (Action-Ergebnis).
+  if ((a.route === null) !== (b.route === null)) return false;
+  if (a.route !== null && b.route !== null) {
+    if (a.route.timeTicks !== b.route.timeTicks || a.route.rev !== b.route.rev) return false;
+    if (a.route.path.length !== b.route.path.length) return false;
+    for (let i = 0; i < a.route.path.length; i++) {
+      if (a.route.path[i] !== b.route.path[i]) return false;
+    }
   }
   const arrays: Array<[Uint8Array, Uint8Array]> = [
     [a.tiles, b.tiles],

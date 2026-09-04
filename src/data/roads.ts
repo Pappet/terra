@@ -25,3 +25,17 @@ export const ROAD_BY_ID = new Map<number, RoadType>(ROAD_TYPES.map((r) => [r.id,
 export const MOVEMENT = {
   offroadSpeedTilesPerTick: 0.25,
 } as const;
+
+/**
+ * Terrain-Modifikator auf der offroad-Geschwindigkeit, indiziert nach Tile-ID
+ * (siehe data/tiles.ts). Strassen ignorieren Terrain (ausgebaut = ausgeglichen).
+ * Wasser (3) ist mit 0 unpassierbar.
+ */
+export const TERRAIN_OFFROAD_FACTOR: readonly number[] = [
+  1.0, // 0 Ödland
+  1.0, // 1 Gras
+  1.0, // 2 Erde
+  0.0, // 3 Wasser
+  0.7, // 4 Fels
+  0.6, // 5 Wald
+];

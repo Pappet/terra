@@ -24,8 +24,8 @@ DoD:
 
 Tasks:
 - [x] M2.1 Strassen-Datenmodell: road-Layer im WorldState, Strassentypen + Kosten in /src/data, Actions buildRoad/demolishRoad
-- [~] M2.2 Grid-Graph + A* mit Cache (DOM-frei, getestet: Korrektheit, Determinismus, Cache-Wirksamkeit)
-- [ ] M2.3 Reisezeit-Modell pro Strassentyp/Terrain, Routenberechnung als Action/Ergebnis-Layer
+- [x] M2.2 Grid-Graph + A* mit Cache (DOM-frei, getestet: Korrektheit, Determinismus, Cache-Wirksamkeit)
+- [~] M2.3 Reisezeit-Modell pro Strassentyp/Terrain, Routenberechnung als Action/Ergebnis-Layer
 - [ ] M2.4 UI: Drag-Bau/-Abriss mit Kostenabzug, Routen-Overlay (Pfad + Reisezeit-Anzeige)
 - [ ] M2.5 Unterhaltskosten-Basis (pro Tick verbucht, sichtbar im HUD), Savegame erweitert
 
