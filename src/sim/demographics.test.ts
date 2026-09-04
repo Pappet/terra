@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { World } from './world';
+import { World, equalWorlds } from './world';
 import { GROWTH } from '../data/cities';
 import { AGE_TICK_INTERVAL, cohortIndex } from './population';
 import { housingCapacity, runDemographicsTick } from './demographics';
@@ -76,5 +76,23 @@ describe('M4.2 Demografie', () => {
       return w;
     };
     expect(run().toJson()).toBe(run().toJson());
+  });
+
+  it('Save/Replay mitten im Lauf ist identisch zum durchgehenden Lauf (RNG-Zustand)', () => {
+    // Durchgehender Lauf
+    const live = cityWithHouse();
+    live.population.add(1, cohortIndex(1, 0, 0), 4);
+    for (let t = 0; t < 150; t++) live.update(); // vor dem Demografie-Intervall bei 200
+
+    // Abgebrochener Lauf: speichern, später weiterführen
+    const saved = World.fromJson(live.toJson());
+    expect(saved.tick).toBe(151);
+    // Beide laufen über das Intervall (Tick 200) und darüber hinaus
+    for (let t = 0; t < 150; t++) live.update();
+    for (let t = 0; t < 150; t++) saved.update();
+    expect(saved.tick).toBe(301);
+    expect(live.tick).toBe(301);
+    // Identische Bevölkerung inkl. Geburten-/Sterbefall-RNG-Verbrauch beim Intervall-Tick
+    expect(equalWorlds(live, saved)).toBe(true);
   });
 });
