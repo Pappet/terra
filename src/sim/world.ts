@@ -15,6 +15,7 @@ import { Buildings } from './buildings';
 import { Cities } from './cities';
 import { PathFinder } from './pathfinding';
 import { Rng } from './rng';
+import { runGrowthTick } from './growth';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
@@ -81,6 +82,8 @@ export class World {
   zoneCity: Int16Array;
   /** Gebäude-ID pro Tile (0 = keins). */
   buildingIndex: Int32Array;
+  /** Pro Stadt (Index Stadt-ID - 1): gezonte, noch unbebaute Tile-Indizes. */
+  cityZoneTiles: number[][];
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
@@ -115,6 +118,20 @@ export class World {
     this.zoneType = new Uint8Array(width * height);
     this.zoneCity = new Int16Array(width * height);
     this.buildingIndex = new Int32Array(width * height);
+    this.cityZoneTiles = [];
+  }
+
+  /** Zonen-Tile-Listen aus den Layern rekonstruieren (Laden, Aktionen pflegen sie sonst). */
+  private rebuildCityZoneTiles(): void {
+    this.cityZoneTiles = [];
+    for (let c = 0; c < this.cities.count; c++) this.cityZoneTiles.push([]);
+    for (let idx = 0; idx < this.zoneType.length; idx++) {
+      const cityId = this.zoneCity[idx] ?? 0;
+      if (cityId === 0) continue;
+      if ((this.buildingIndex[idx] ?? 0) !== 0) continue;
+      const list = this.cityZoneTiles[cityId - 1];
+      if (list !== undefined) list.push(idx);
+    }
   }
 
   /**
@@ -128,8 +145,22 @@ export class World {
     }
     const id = this.buildings.add(cityId, x, y, type);
     this.buildingIndex[idx] = id;
+    this.removeFromZoneTiles(cityId, idx);
     this.tileRev++;
     return id;
+  }
+
+  private removeFromZoneTiles(cityId: number, idx: number): void {
+    const list = this.cityZoneTiles[cityId - 1];
+    if (list === undefined) return;
+    const at = list.indexOf(idx);
+    if (at >= 0) list.splice(at, 1);
+  }
+
+  private addToZoneTiles(cityId: number, idx: number): void {
+    const list = this.cityZoneTiles[cityId - 1];
+    if (list === undefined) return;
+    if (!list.includes(idx)) list.push(idx);
   }
 
   /**
@@ -151,6 +182,11 @@ export class World {
       this.buildingIndex[my * this.width + mx] = index + 1; // neue ID des verschobenen Gebäudes
     }
     this.buildings.removeAt(index);
+    // Zone besteht weiter -> Tile wieder als Bauland anbieten
+    const zoneCityId = this.zoneCity[ry * this.width + rx] ?? 0;
+    if (zoneCityId !== 0 && (this.zoneType[ry * this.width + rx] ?? 0) !== 0) {
+      this.addToZoneTiles(zoneCityId, ry * this.width + rx);
+    }
     this.tileRev++;
   }
 
@@ -188,7 +224,7 @@ export class World {
             : { path: result.path, timeTicks: result.timeTicks, rev: this.tileRev };
       }
     }
-    // M2.5: Unterhaltskosten pro Tick verbuchen (siehe oben).
+    runGrowthTick(this, this.rng);
     this.tick++;
   }
 
@@ -214,6 +250,7 @@ export class World {
       zoneType: this.zoneType,
       zoneCity: this.zoneCity,
       buildingIndex: this.buildingIndex,
+      cityZoneTiles: this.cityZoneTiles,
       currentTick: this.currentTick,
       rev: this.tileRev,
       treasury: this.treasury,
@@ -338,6 +375,7 @@ export class World {
     }
     world.layers = layers;
     world.tick = tick;
+    world.rebuildCityZoneTiles();
     world.recomputeUpkeep();
     world.rng = Rng.fromState(asUint32(d.rngState, 'rngState'));
     return world;

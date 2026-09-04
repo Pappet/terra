@@ -30,9 +30,9 @@ DoD:
 
 Tasks:
 - [x] M3.1 Städte-Datenmodell: cities als SoA (IDs, Position, Name), Action foundCity
-- [~] M3.2 Zonen als Layer + Zonen-Werkzeug/Actions, Gebäude-Datenmodell (SoA)
-- [ ] M3.3 Nachfrage-Modell (R/C/I im Gleichgewicht, Wachstumsdruck aus Anschluss/Lage)
-- [ ] M3.4 Gebäude-Entstehung/-Verfall pro Tick (gezont + angeschlossen -> Bau; ohne Anschluss -> Verfall)
+- [x] M3.2 Zonen als Layer + Zonen-Werkzeug/Actions, Gebäude-Datenmodell (SoA)
+- [x] M3.3 Nachfrage-Modell (R/C/I im Gleichgewicht, Wachstumsdruck aus Anschluss/Lage)
+- [~] M3.4 Gebäude-Entstehung/-Verfall pro Tick (gezont + angeschlossen -> Bau; ohne Anschluss -> Verfall)
 - [ ] M3.5 Stadt-Panel (Bevölkerung/Zonen/Gebäude), Debug-Overlay Zonen/Gebäude, Savegame v4
 - [ ] M3.6 Wachstums-Nachweis: gezonte angeschlossene Stadt wächst; nicht angeschlossene schrumpft
 

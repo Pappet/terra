@@ -25,6 +25,8 @@ export interface ActionContext {
   readonly zoneCity: Int16Array;
   /** 0 = kein Gebäude, sonst Gebäude-ID. */
   readonly buildingIndex: Int32Array;
+  /** Pro Stadt: gezonte, unbebaute Tiles (pflegt paintZone). */
+  readonly cityZoneTiles: number[][];
   /** Tick-Nummer, die dieses Update abschliesst (Aktionen gelten als in diesem Tick passiert). */
   readonly currentTick: number;
   treasury: number;
@@ -113,6 +115,7 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
         return reject(ctx, `Zu nah an bestehender Stadt (min. ${CITIES.minFoundingDistance} Tiles)`);
       }
       ctx.cities.found(name, x, y, ctx.currentTick);
+      ctx.cityZoneTiles.push([]);
       return true;
     }
     case 'paintZone': {
@@ -132,8 +135,10 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
         return reject(ctx, 'Tile ist bebaut');
       }
       if (zone === 0) {
+        const oldCity = ctx.zoneCity[idx] ?? 0;
         ctx.zoneType[idx] = 0;
         ctx.zoneCity[idx] = 0;
+        if (oldCity > 0) removeFromZoneList(ctx.cityZoneTiles, oldCity, idx);
         return true;
       }
       const nearest = ctx.cities.nearest(x, y);
@@ -142,6 +147,7 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
       }
       ctx.zoneType[idx] = zone;
       ctx.zoneCity[idx] = nearest.id;
+      addToZoneList(ctx.cityZoneTiles, nearest.id, idx);
       return true;
     }
     default: {
@@ -162,4 +168,17 @@ function inBounds(ctx: ActionContext, x: number, y: number): boolean {
 function reject(ctx: ActionContext, reason: string): false {
   ctx.lastRejected = reason;
   return false;
+}
+
+function addToZoneList(cityZoneTiles: number[][], cityId: number, idx: number): void {
+  const list = cityZoneTiles[cityId - 1];
+  if (list === undefined) return;
+  if (!list.includes(idx)) list.push(idx);
+}
+
+function removeFromZoneList(cityZoneTiles: number[][], cityId: number, idx: number): void {
+  const list = cityZoneTiles[cityId - 1];
+  if (list === undefined) return;
+  const at = list.indexOf(idx);
+  if (at >= 0) list.splice(at, 1);
 }
