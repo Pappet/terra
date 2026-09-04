@@ -1,6 +1,20 @@
 # JOURNAL
 
-## 2026-03-05 – M0.5 Kamera + Renderer mit Layer-Caching
+## 2026-03-05 – M0.7 Determinismus-Test + M0-Abschluss
+**Gebaut:** Der DoD-Test: gleicher Seed + gleiche (deterministisch erzeugte) Aktionsliste -> identischer Weltzustand nach 1000 Ticks, einmal direkt getaktet, einmal über SimLoop mit manueller Uhr; zusätzlich Savegame-Roundtrip im deterministischen Lauf und Negativprobe (abweichende Liste -> anderer Zustand). 41 Tests grün, Build grün. **M0 ist damit fertig.**
+**Entscheidungen:**
+- Die Aktionsliste wird per Formel erzeugt, nicht mit Math.random – die Nicht-Zufälligkeit gilt in Tests genauso wie in /src/sim.
+- Negativprobe zuerst mit verschobenen Ticks gebaut: Diese ist wirkungsidentisch (Paints hängen nicht vom Tick ab) und beweist nichts; der Test vergleicht jetzt unterschiedliche Tile-Werte.
+- Bedienprobe im echten Browser bleibt als Aufgabe für Peter offen (FRAGEN.md); automatisiert abgedeckt sind Sim, Loop, Kamera-Mathe und Build/Preview.
+**Offen:** Manuelle Browser-Durchsicht durch Peter; M1-Zerlegung folgt sofort.
+
+## 2026-03-05 – M0.6 HUD + Persistenz
+**Gebaut:** `/src/persist` (IndexedDB-Hülle + Save/Load/Export/Import), `Hud` (Statuszeile, Speed-Buttons, Tile-Palette, Savegame-Buttons), `input.ts` (Canvas-Eingabe, gibt Frame-Poll für Tastatur-Pan zurück), `main.ts` neu gegliedert, `SimLoop.setWorld` fürs Nachladen.
+**Entscheidungen:**
+- Import/Export nutzen dasselbe JSON-Format wie der Browser-Slot – ein Format, ein Validierungspfad.
+- HUD enthält keinerlei Logik: Callbacks nach unten, Aktivmarkierungen von aussen gesetzt (Speed-Änderungen können auch per Tastatur kommen).
+- Kein Framework, reines DOM – panelweise gebaute Elemente, < 200 Zeilen pro Modul.
+**Offen:** nichts.
 **Gebaut:** `Camera` (DOM-frei, getestet: Roundtrip, ortsfestes Cursor-Zoom, Clamping), `Renderer` mit Offscreen-Tile-Ebene: Cache wird nur bei `tileRev`-/Auflösungswechsel neu gezeichnet, pro Frame nur Blit + Gitter-/Rand-Overlay. `main.ts` nutzt jetzt Loop + Kamera: Linksklick/Ziehen malt, Rechtsklick/Mitte schwenkt, Rad zoomt, WASD/Pfeile pan, +/- zoomt, Leertaste Pause, 1/2/3 Speed.
 **Entscheidungen:**
 - Cache-Auflösung auf max. 16 Gerätepixel/Tile gekappt: Bei zoom 48 und dpr 2 wäre die Vollauflösung ~600 MB gross; flächige Tiles vertragen Nearest-Neighbor-Upscaling. Bei 512x512-Karten (M1) kommt Chunk-Caching (BACKLOG).
