@@ -28,14 +28,16 @@ export interface WorldLayers extends DerivedLayers {
   readonly deposits: Uint8Array;
 }
 
-/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 2). */
+/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 3). */
 export interface SerializedWorld {
   saveVersion: number;
   seed: number;
   tick: number;
   width: number;
   height: number;
+  treasury: number;
   tiles: string;
+  roads: string;
   layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
@@ -59,7 +61,13 @@ export class World {
   tick = 0;
   tiles: Uint8Array;
   layers: WorldLayers;
-  /** Erhöht sich bei jeder Änderung an `tiles` – Cache-Invalidierung fürs Rendering. */
+  /** Strassentyp pro Tile (0 = keine Strasse, siehe /src/data/roads.ts). */
+  roads: Uint8Array;
+  /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
+  treasury: number = SIM_CONFIG.startingTreasury;
+  /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
+  lastRejected: string | null = null;
+  /** Erhöht sich bei jeder Änderung an sichtbaren Layerdaten (tiles/roads). */
   tileRev = 0;
 
   private rng: Rng;
@@ -76,6 +84,7 @@ export class World {
     const deposits = generateDeposits(this.seed, terrain);
     this.tiles = generateSurface(terrain, derived);
     this.layers = { ...terrain, ...derived, deposits };
+    this.roads = new Uint8Array(width * height);
   }
 
   /** Action einreihen; sie greift zu Beginn des nächsten update(). */
@@ -85,19 +94,25 @@ export class World {
 
   /** Ein Sim-Tick: wartende Actions anwenden, dann Uhr weitersetzen. */
   update(): void {
+    this.lastRejected = null;
     if (this.queue.length > 0) {
       for (const action of this.queue) {
-        applyAction(this.tiles, this.width, this.height, action);
+        applyAction(this, action);
       }
       this.tileRev++;
       this.queue = [];
     }
-    // Ab M2 laufen hier die eigentlichen Simulationssysteme.
+    // M2.5: Unterhaltskosten pro Tick verbuchen.
     this.tick++;
   }
 
   get rngStateU32(): number {
     return this.rng.stateU32;
+  }
+
+  /** Top-Level-Sicht auf den Wasser-Layer (ActionContext-Kontrakt). */
+  get water(): Uint8Array {
+    return this.layers.water;
   }
 
   serialize(): SerializedWorld {
@@ -111,7 +126,9 @@ export class World {
       tick: this.tick,
       width: this.width,
       height: this.height,
+      treasury: this.treasury,
       tiles: bytesToBase64(this.tiles),
+      roads: bytesToBase64(this.roads),
       layers,
       rngState: this.rng.stateU32,
     };
@@ -147,6 +164,12 @@ export class World {
 
     const world = new World(seed, width, height);
     world.tiles = decodeLayer(d.tiles, 'tiles', size, 0, TILE_TYPES.length - 1);
+    world.roads = decodeLayer(d.roads, 'roads', size, 0, 255);
+    const treasury = d.treasury;
+    if (typeof treasury !== 'number' || !Number.isFinite(treasury) || treasury < 0) {
+      throw new Error(`Savegame: treasury ist keine gültige Zahl: ${String(treasury)}`);
+    }
+    world.treasury = treasury;
 
     if (typeof d.layers !== 'object' || d.layers === null) {
       throw new Error('Savegame: layers fehlt');
@@ -177,12 +200,13 @@ export class World {
 export function equalWorlds(a: World, b: World): boolean {
   if (
     a.seed !== b.seed || a.width !== b.width || a.height !== b.height ||
-    a.tick !== b.tick || a.rngStateU32 !== b.rngStateU32
+    a.tick !== b.tick || a.treasury !== b.treasury || a.rngStateU32 !== b.rngStateU32
   ) {
     return false;
   }
   const arrays: Array<[Uint8Array, Uint8Array]> = [
     [a.tiles, b.tiles],
+    [a.roads, b.roads],
     [a.layers.elevation, b.layers.elevation],
     [a.layers.water, b.layers.water],
     [a.layers.river, b.layers.river],

@@ -1,5 +1,19 @@
 # JOURNAL
 
+## 2026-03-05 – M2.1 Strassen-Datenmodell
+**Gebaut:** `roads: Uint8Array` im WorldState, Strassentypen (Pfad/Strasse/Chaussee mit Baukosten, Unterhalt, Tempo, Kapazität) in `/src/data/roads.ts`, Actions `buildRoad`/`demolishRoad`, `treasury` mit Startkapital, `lastRejected` als deterministische Ablehnungs-Info fürs UI, Savegame **v3** (roads + treasury). applyAction bekam dafür einen `ActionContext` (strukturell erfüllt von World statt World-Import → keine zirkuläre Abhängigkeit).
+**Entscheidungen:**
+- Bau auf Wasser abgelehnt (Brücken kommen später), kein Erstattung beim Abriss, Ausbau auf belegtem Tile kostet voll.
+- ActionContext als strukturelle Schnittstelle: actions.ts bleibt import-frei von world.ts; World gibt den Wasser-Layer per Getter top-level frei.
+- Lehre: esbuild (vitest) typecheckt nicht – der fehlende `water`-Kontrakt fiel erst im Testlauf auf. `npm run build` (tsc) ist und bleibt Teil jedes Schritts.
+**Offen:** nichts.
+
+## 2026-03-05 – M1.8 Reproduzierbarkeit + M1-Abschluss
+**Gebaut:** Gesamt-Nachweis auf 512x512: gleicher Seed -> identische Welt über alle Layer, Roundtrip mit Paint, Zeitbudget (Weltgen < 4 s, Savegame-JSON hin+her < 2 s), Vollständigkeit + Wasseranteil. 89 Tests grün, Build grün. **M1 ist damit fertig.**
+**Entscheidungen:**
+- Zeitbudget-Bounds bewusst grosszügig (4 s/2 s) – Weltgen ist Einmalkosten; das 16-ms-Budget gilt nur für Sim-Ticks.
+**Offen:** Manuelle Browser-Durchsicht durch Peter (FRAGEN.md); M2 (Netz) beginnt.
+
 ## 2026-03-05 – M1.6 Layer im WorldState + Savegame v2
 **Gebaut:** `World` generiert im Konstruktor die komplette Welt (Terrain -> Derived -> Deposits -> Surface-Mapping zu Tile-IDs); alle sechs Layer liegen als Uint8Arrays im Zustand. Savegame **v2**: Layer und Tiles als base64-Strings (eigene DOM-freie Implementierung in `sim/base64.ts`), harte Validierung beim Laden (Längen, Wertebereiche, unbekannte Vorkommens-Bits). Neue Task-ID "Wald" in der Palette-Tabelle. 512er-Savegame < 5 MB.
 **Entscheidungen:**
