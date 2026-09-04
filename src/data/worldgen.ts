@@ -27,4 +27,29 @@ export const WORLDGEN = {
     /** Maximale Schritte pro Fluss (Deckel gegen Endlosschleifen auf Plateaus). */
     maxSteps: 1200,
   },
+  fertility: {
+    octaves: 4,
+    /** Regionale Grundfruchtbarkeit, Wellenlänge in Tiles. */
+    wavelength: 96,
+    /** Höhenstrafe: fruchtbar sind Täler, karg sind Höhen. */
+    elevationPenalty: 0.7,
+    /** Flussnähe: Boost innerhalb so vieler Tiles (Chebyshev-Distanz). */
+    riverRadius: 5,
+    riverBoost: 0.35,
+    /** Küstennähe (Meer): kleinerer Boost. */
+    coastRadius: 2,
+    coastBoost: 0.15,
+  },
+  forest: {
+    octaves: 4,
+    /** Feuchte-Feld, Wellenlänge in Tiles. */
+    wavelength: 72,
+    /** Feuchte-Schwelle für Wald. */
+    threshold: 0.62,
+    /** Flussnähe befeuchtet. */
+    riverRadius: 6,
+    riverBoost: 0.2,
+    /** Oberhalb dieses Höhenanteils wächst kein Wald (Baumgrenze). */
+    maxElevation: 0.78,
+  },
 } as const;
