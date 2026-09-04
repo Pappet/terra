@@ -51,7 +51,7 @@ describe('M4-DoD: geteilter Arbeitsmarkt', () => {
       w.cities.found('C', 9, 0, 0);
       for (let c = 1; c <= 3; c++) w.population.ensureCity(c);
       // 10 Gewerbegebäude in B = 40 Jobs
-      for (let b = 0; b < 10; b++) w.buildings.add(2, 5, 0, 2);
+      for (let b = 0; b < 10; b++) w.buildings.add(2, 5, 0, 2, -1);
       // Arbeiter wohnen in A und C, nicht in B
       addAdults(w, 1, 30); // 18 Erwerbstätige
       addAdults(w, 3, 30); // 18 Erwerbstätige
@@ -84,7 +84,7 @@ describe('M4-DoD: geteilter Arbeitsmarkt', () => {
     w.cities.found('B', 5, 0, 0);
     w.population.ensureCity(1);
     w.population.ensureCity(2);
-    for (let b = 0; b < 10; b++) w.buildings.add(2, 5, 0, 2);
+    for (let b = 0; b < 10; b++) w.buildings.add(2, 5, 0, 2, -1);
     addAdults(w, 1, 60); // 36 Erwerbstätige
 
     const before = assignWorkers(w);

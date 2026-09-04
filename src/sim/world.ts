@@ -20,6 +20,8 @@ import { runGrowthTick } from './growth';
 import { runDemographicsTick, runMigration } from './demographics';
 import { Storage } from './storage';
 import { assignWorkers, type EmploymentState } from './employment';
+import { runProductionTick } from './production';
+import { Market, updateMarket } from './market';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
@@ -53,6 +55,7 @@ export interface SerializedWorld {
   zoneCity: string;
   population: number[][];
   storage: number[][];
+  market: { prices: number[][]; produced: number[][]; consumed: number[][] };
   layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
@@ -94,6 +97,8 @@ export class World {
   population: Population;
   /** Lagerbestände pro Stadt (Güter laut /src/data/goods.ts). */
   storage: Storage;
+  /** Lokaler Markt: Preise und Nachfrage-/Angebotsraten pro Stadt. */
+  market: Market;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
@@ -135,6 +140,7 @@ export class World {
     this.cityZoneTiles = [];
     this.population = new Population();
     this.storage = new Storage();
+    this.market = new Market();
   }
 
   /** Zonen-Tile-Listen aus den Layern rekonstruieren (Laden, Aktionen pflegen sie sonst). */
@@ -154,12 +160,12 @@ export class World {
    * Gebäude an einer Stelle registrieren (Tick-System M3.4); pflegt den
    * Tile-Index. Wirft, wenn das Tile bereits bebaut ist.
    */
-  addBuildingAt(cityId: number, x: number, y: number, type: number): number {
+  addBuildingAt(cityId: number, x: number, y: number, type: number, recipe = -1): number {
     const idx = y * this.width + x;
     if ((this.buildingIndex[idx] ?? 0) !== 0) {
       throw new Error(`addBuildingAt: Tile ${x},${y} ist bereits bebaut`);
     }
-    const id = this.buildings.add(cityId, x, y, type);
+    const id = this.buildings.add(cityId, x, y, type, recipe);
     this.buildingIndex[idx] = id;
     this.removeFromZoneTiles(cityId, idx);
     this.tileRev++;
@@ -258,6 +264,7 @@ export class World {
       this.commute = assignWorkers(this);
       this.commuteDirty = false;
     }
+    updateMarket(this, runProductionTick(this));
     this.tick++;
   }
 
@@ -265,6 +272,7 @@ export class World {
   private syncPopulation(): void {
     this.population.ensureCity(this.cities.count);
     this.storage.ensureCity(this.cities.count);
+    this.market.ensureCity(this.cities.count);
   }
 
   /**
@@ -341,6 +349,7 @@ export class World {
       zoneCity: bytesToBase64(int16ToBytes(this.zoneCity)),
       population: this.population.serialize(),
       storage: this.storage.serialize(),
+      market: this.market.serialize(),
       layers,
       rngState: this.rng.stateU32,
     };
@@ -382,6 +391,7 @@ export class World {
     world.zoneType = decodeLayer(d.zoneType, 'zoneType', size, 0, 3);
     world.population = Population.deserialize(d.population);
     world.storage = Storage.deserialize(d.storage);
+    world.market = Market.deserialize(d.market);
     if (world.population.perCity.length < world.cities.count) {
       throw new Error('Savegame: Bevölkerungsvektoren fehlen für geladene Städte');
     }

@@ -9,6 +9,7 @@
 import { GROWTH } from '../data/cities';
 import type { Rng } from './rng';
 import { computeDemand, computeStats } from './demand';
+import { chooseRecipe } from './production';
 import type { World } from './world';
 
 /** Hat das Tile einen Strassenanschluss in der 4er-Nachbarschaft? */
@@ -64,7 +65,8 @@ export function runGrowthTick(world: World, rng: Rng): void {
         }
         const x = idx % world.width;
         const y = Math.floor(idx / world.width);
-        world.addBuildingAt(cityId, x, y, zone); // entfernt das Tile aus der Liste
+        const recipe = chooseRecipe(world, cityId, idx, zone);
+        world.addBuildingAt(cityId, x, y, zone, recipe === null ? -1 : recipe.id);
         builds++;
         // kein i++: das nächste Kandidat-Tile rückt auf Position i
       } else {

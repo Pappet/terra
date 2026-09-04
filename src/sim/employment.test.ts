@@ -125,8 +125,8 @@ describe('M4.3 Arbeitsplätze', () => {
     w.population.ensureCity(1);
     w.population.ensureCity(2);
     w.population.ensureCity(3);
-    w.buildings.add(2, 0, 0, 2); // 4 Jobs in B (Distanz 2)
-    w.buildings.add(3, 5, 0, 2); // 4 Jobs in C (Distanz 3)
+    w.buildings.add(2, 0, 0, 2, -1); // 4 Jobs in B (Distanz 2)
+    w.buildings.add(3, 5, 0, 2, -1); // 4 Jobs in C (Distanz 3)
     addAdults(w, 1, 4); // 2.4 Erwerbstätige
 
     const result = assignWorkers(w);
@@ -142,7 +142,7 @@ describe('M4.3 Arbeitsplätze', () => {
     w.cities.found('B', 8, 0, 0);
     w.population.ensureCity(1);
     w.population.ensureCity(2);
-    for (let b = 0; b < 20; b++) w.buildings.add(2, 8, 0, 2); // 80 Jobs
+    for (let b = 0; b < 20; b++) w.buildings.add(2, 8, 0, 2, -1); // 80 Jobs
     addAdults(w, 1, 200);
 
     const result = assignWorkers(w);
@@ -159,7 +159,7 @@ describe('M4.3 Arbeitsplätze', () => {
       w.cities.found('B', 8, 0, 0);
       w.population.ensureCity(1);
       w.population.ensureCity(2);
-      for (let b = 0; b < 20; b++) w.buildings.add(2, 8, 0, 2);
+      for (let b = 0; b < 20; b++) w.buildings.add(2, 8, 0, 2, -1);
       addAdults(w, 1, 200);
       return assignWorkers(w).flows[0]![1] ?? 0;
     };
@@ -175,7 +175,7 @@ describe('M4.3 Arbeitsplätze', () => {
     w.cities.found('B', 8, 0, 0);
     w.population.ensureCity(1);
     w.population.ensureCity(2);
-    for (let b = 0; b < 5; b++) w.buildings.add(2, 8, 0, 2); // 20 Jobs
+    for (let b = 0; b < 5; b++) w.buildings.add(2, 8, 0, 2, -1); // 20 Jobs
     addAdults(w, 1, 100);
 
     const result = assignWorkers(w);

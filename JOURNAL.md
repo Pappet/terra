@@ -1,5 +1,14 @@
 # JOURNAL
 
+## 2026-03-05 – M5.2 Produktionstick + Rezeptauswahl (D006)
+**Gebaut:** `Recipe.requires` (datengetriebene Umgebungsfilter: deposit-Bits/Forest/fertility mit Radius), `buildings.recipe`-SoA-Spalte (Savegame validiert), `chooseRecipe` (Umgebungsfilter → Kettenausgleich: wenigste Produzenten, Tie-Break ID), `runProductionTick` (beschäftigte Arbeiter in fester Gebäude-Reihenfolge zugeteilt, Rate = Arbeitsanteil, fehlender Input stoppt Output komplett). Tests: Kette baut sich selbst (Holzfäller→Sägewerk→Werkstatt), Umgebungsfilter, Produktion mit Arbeitern, Engpass (2 Sägewerke frieren bei leerem Holz-Lager ein), kein Arbeiter → kein Output, Determinismus. 183 Tests grün.
+**Entscheidungen:**
+- D006 (DECISIONS.md) zuerst skizziert, dann implementiert — Berater-Hinweis befolgt, der auf die Abhängigkeit des M5.6-DoD von dieser Regel hinwies.
+- Hart-Engpass statt Teilauslastung bei fehlendem Input: messbar und einfach; weiche Drosselung später, falls M6-Handel Teilmengen braucht.
+- Arbeitskraft-Zuteilung nach Gebäude-Reihenfolge (Array-Index): erste Stadtindustrie wird bedient zuerst — später kann Zufriedenheit/Bodenwert die Reihenfolge gewichten (BACKLOG).
+- Testlehre verfeinert: "Waldtile" reicht nicht — Farm-Filter (fertility ≥ 0.35) machte fruchtbaren Wald zur gültigen Farm-Alternative. Die Regel war richtig, der Test suchte den falschen Tile (unfruchtbarer Wald).
+**Offen:** M5.3 Preise, M5.4 Kasse, M5.5 Performance-Review, M5.6 Engpass-Nachweis (formal, Mechanismus getestet).
+
 ## 2026-03-05 – M5.1 Güter/Rezepte/Lager
 **Gebaut:** `/src/data/goods.ts` (6 Güter mit Basispreisen, 7 Rezepte: Holzfäller/Steinbruch/Erzgrube/Farm → Sägewerk → Werkstatt, Markt als Konsument) und `Storage` (pro Stadt Float64-Vektor über Güter, add/take mit Bestandsdeckel), Savegame **v7** (Lagervektoren). Tests: ID-Kontiguität, Kettenverweise (Holz→Bretter→Werkzeug), add/take-Deckel, Roundtrip, Ablehnung kaputter Vektoren.
 **Entscheidungen:**

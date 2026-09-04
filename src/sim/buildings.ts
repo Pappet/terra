@@ -1,3 +1,5 @@
+import { RECIPES } from '../data/goods';
+
 /**
  * Gebäude als Struct-of-Arrays mit numerischen IDs (M3.2).
  * IDs beginnen bei 1; 0 bedeutet in Referenzlayern "kein Gebäude".
@@ -14,8 +16,10 @@ export class Buildings {
   level: number[] = [];
   /** 0 = verfallen, 1 = neuwertig. */
   condition: number[] = [];
+  /** Rezept-ID (data/goods.ts), -1 = kein Rezept (Wohnen). */
+  recipe: number[] = [];
 
-  add(cityId: number, x: number, y: number, type: number): number {
+  add(cityId: number, x: number, y: number, type: number, recipe: number = -1): number {
     this.count++;
     this.cityId.push(cityId);
     this.x.push(x);
@@ -23,6 +27,7 @@ export class Buildings {
     this.type.push(type);
     this.level.push(1);
     this.condition.push(1);
+    this.recipe.push(recipe);
     return this.count;
   }
 
@@ -36,6 +41,7 @@ export class Buildings {
       this.type[index] = this.type[last] as number;
       this.level[index] = this.level[last] as number;
       this.condition[index] = this.condition[last] as number;
+      this.recipe[index] = this.recipe[last] as number;
     }
     this.cityId.pop();
     this.x.pop();
@@ -43,6 +49,7 @@ export class Buildings {
     this.type.pop();
     this.level.pop();
     this.condition.pop();
+    this.recipe.pop();
     this.count--;
   }
 
@@ -54,6 +61,7 @@ export class Buildings {
     type: number[];
     level: number[];
     condition: number[];
+    recipe: number[];
   } {
     return {
       count: this.count,
@@ -63,6 +71,7 @@ export class Buildings {
       type: [...this.type],
       level: [...this.level],
       condition: [...this.condition],
+      recipe: [...this.recipe],
     };
   }
 
@@ -76,7 +85,7 @@ export class Buildings {
     if (typeof count !== 'number' || !Number.isInteger(count) || count < 0) {
       throw new Error(`Savegame: buildings.count ungültig: ${String(count)}`);
     }
-    const keys = ['cityId', 'x', 'y', 'type', 'level', 'condition'] as const;
+    const keys = ['cityId', 'x', 'y', 'type', 'level', 'condition', 'recipe'] as const;
     for (const key of keys) {
       if (!Array.isArray(d[key]) || (d[key] as unknown[]).length !== count) {
         throw new Error(`Savegame: buildings.${key} hat nicht Länge ${count}`);
@@ -89,6 +98,7 @@ export class Buildings {
     buildings.type = [...(d.type as number[])];
     buildings.level = [...(d.level as number[])];
     buildings.condition = [...(d.condition as number[])];
+    buildings.recipe = [...(d.recipe as number[])];
     for (let i = 0; i < count; i++) {
       const type = buildings.type[i];
       if (typeof type !== 'number' || type < 1 || type > 3) {
@@ -97,6 +107,10 @@ export class Buildings {
       const condition = buildings.condition[i];
       if (typeof condition !== 'number' || condition < 0 || condition > 1) {
         throw new Error(`Savegame: buildings.condition[${i}] ausserhalb [0,1]`);
+      }
+      const recipe = buildings.recipe[i];
+      if (typeof recipe !== 'number' || recipe < -1 || recipe >= RECIPES.length) {
+        throw new Error(`Savegame: buildings.recipe[${i}] ungültig: ${String(recipe)}`);
       }
     }
     return buildings;
