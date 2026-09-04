@@ -1,5 +1,19 @@
 # JOURNAL
 
+## 2026-03-05 – M4.2 Bevölkerungsdynamik
+**Gebaut:** `runDemographicsTick` (wirkt alle AGE_TICK_INTERVAL=200 Ticks): Alterung mit Bildungswanderung (Kinder→Grundbildung p=0.9, junge Erwachsene→Hochschule p=0.15), Sterbefälle je Altersgruppe, Geburten proportional zu Erwachsenen und **kapazitätsbegrenzt** durch Wohnhäuser (Häuser × residentsPerHouse). `housingCapacity()` für Tests/UI. Tests: Weiterziehen der Kohorten, Kapazitätsdeckel, Aussterben ohne Häuser, Ausdünnen der ältesten Gruppe, Determinismus. 155 Tests grün, Build grün.
+**Entscheidungen:**
+- Menschen als float in aggregierten Kohorten (Anzeige rundet) – glatte Dynamik, M4 bleibt Kohortenmodell; Einzelagenten bleiben Visualisierungs-Feature nach M6.
+- Kinder haben Bildung 0→1 mit Chance; Einkommen der Kinder folgt elterlicher Bildung (vereinfachte soziale Herkunft).
+**Offen:** M4.3 (Arbeitsplätze + Zuweisung über A*), M4.4 (Pendler), M4.5 (Zufriedenheit/Zuzug/Wegzug), M4.6 (Overlay), M4.7 (DoD-Nachweis) — siehe PLAN.md.
+
+## 2026-03-05 – M4.1 Bevölkerungs-Kohorten
+**Gebaut:** `Population` als pro-Stadt-Kohortenvektoren (4 Altersgruppen × 3 Bildung × 3 Einkommen = 36 Buckets, float), `cohortIndex`-Mapping (einzigartig, getestet), `workforce()` (Gruppen 1+2), Savegame **v6** (Kohorten als Zahl-Arrays mit Validierung), `syncPopulation()` hält Vektoren an Stadtanzahl synchron.
+**Entscheidungen:**
+- Kohorten pro Stadt statt global: Pendel (M4.4) arbeitet auf Städtepaaren, Zuweisung braucht Wohnort-Kontext.
+- Alterung als Intervall-Ereignis (200 Ticks ≈ 1 "Jahr") statt kontinuierlich: billig, deterministisch, nachvollziehbar.
+**Offen:** nichts.
+
 ## 2026-03-05 – M3.6 Wachstums-Nachweis + M3-Abschluss
 **Gebaut:** Der DoD-Test in einer Welt mit zwei Städten: Stadt A (Strasse + 2 Wohnzonen) wächst in 800 Ticks von selbst (≥ 2 Häuser, Einwohner > 0); Stadt B (Startbestand ohne Anschluss) schrumpft vollständig auf 0. Savegame-Replay über 50 Ticks bleibt identitätsgetreu. 144 Tests grün, Build grün. **M3 ist damit fertig.**
 **Entscheidungen:**
