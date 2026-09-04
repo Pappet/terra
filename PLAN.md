@@ -22,8 +22,8 @@ Tasks:
 - [x] M1.1 Noise-Basis: Value-Noise (2D, fBm) auf Rng-Basis, DOM-frei getestet
 - [x] M1.2 Höhen-Layer + Wasserlinie; Kartengrösse auf 512x512, Performance-Check
 - [x] M1.3 Flüsse: Abfluss von Höhen-Hochpunkten, Graben zur Senke, Wasser-Layer
-- [~] M1.4 Fruchtbarkeit + Wald als abgeleitete Layer
-- [ ] M1.5 Vorkommen: Stein, Ton, Kohle, Eisen, Öl (regionalisiert, seed-abhängig)
+- [x] M1.4 Fruchtbarkeit + Wald als abgeleitete Layer
+- [~] M1.5 Vorkommen: Stein, Ton, Kohle, Eisen, Öl (regionalisiert, seed-abhängig)
 - [ ] M1.6 Layer-Datenmodell im WorldState (Uint8Arrays) + Speicherung im Savegame
 - [ ] M1.7 Debug-Overlays: Layer-Umschalter (Tasten/HUD), Minimap
 - [ ] M1.8 Reproduzierbarkeits-Test: gleicher Seed -> identische Karte; 512er-Karte im Zeitbudget

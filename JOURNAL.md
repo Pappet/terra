@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M1.4 Fruchtbarkeit + Wald
+**Gebaut:** `distanceField` (BFS, Chebyshev, gekappt) und `generateDerived`: Fruchtbarkeit aus regionalem fBm × Höhenstrafe + Fluss-/Küsten-Boosts; Wald aus eigenem Feuchte-fBm + Flussnähe, nur unterhalb der Baumgrenze. Parameter in `/src/data/worldgen.ts`. Tests: Reproduzierbarkeit, Wertebereiche, Wald⊆Land, karge Hochlagen (Perzentil), fruchtbarere Flussnähe, sinnvolle Walddichte.
+**Entscheidungen:**
+- Heuristik-Test "elevation > 200" ging ins Leere (keine solchen Tiles bei manchen Seeds) → Perzentil-Vergleich (oberes Zehntel vs. unteres Drittel der Landtiles). Lehre: Verteilungs-Tests nie auf absolute Schwellen stützen.
+- Fruchtbarkeit/Wald lesen die effektive Höhe (inkl. Fluss-Carving) – Wälder folgen den Tälern, das ist die gewollte Rückkopplung zwischen den Weltgen-Layern.
+**Offen:** nichts.
+
 ## 2026-03-05 – M1.3 Flüsse
 **Gebaut:** `generateRivers`: Quellen = höchste Landtiles mit Mindestabstand (gierig, deterministisch per Höhen-/Index-Tiebreak), Abstieg zum tiefsten 8er-Nachbarn mit Carving (Nachbar wird unter aktuelle Höhe gegraben -> Tälern), Mündung bei Kontakt mit Meer/See/Fluss, `river`-Layer als Teilmenge von `water`. `generateTerrain` liefert jetzt `{elevation, water, river}`. Tests: Reproduzierbarkeit, river⊆water, mindestens eine Meeresmündung pro Seed, Wasseranteil-Bounds, 512er-Perf.
 **Entscheidungen:**
