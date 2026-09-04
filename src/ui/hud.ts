@@ -47,6 +47,8 @@ export class Hud {
   private readonly roadRow: HTMLDivElement;
   private readonly paintRow: HTMLDivElement;
   private readonly zoneRow: HTMLDivElement;
+  private cityPanel: HTMLDivElement | null = null;
+  private cityListEl: HTMLDivElement | null = null;
   private readonly fileInput: HTMLInputElement;
   private flashTimer: number | undefined;
 
@@ -151,9 +153,56 @@ export class Hud {
     this.setActiveSpeed(1);
     this.setActivePaintTile(1);
     this.setActiveOverlay('surface');
-    this.setActiveTool('road');
+    this.setActiveTool('found');
     this.setActiveRoadType(2);
     this.setActiveZoneType(1);
+  }
+
+  /**
+   * Stadt-Panel (links): Liste aller Städte mit Bevölkerung/Zonen/Gebäuden.
+   * Klick auf eine Stadt -> onJump(cityId).
+   */
+  updateCities(
+    entries: ReadonlyArray<{
+      id: number;
+      name: string;
+      residents: number;
+      jobs: number;
+      residential: number;
+      commercial: number;
+      industrial: number;
+      houses: number;
+      shops: number;
+      factories: number;
+    }>,
+    onJump: (cityId: number) => void,
+  ): void {
+    if (this.cityPanel === null) {
+      this.cityPanel = document.createElement('div');
+      this.cityPanel.className = 'panel city-panel';
+      this.cityListEl = document.createElement('div');
+      this.cityPanel.append(this.cityListEl);
+      document.body.append(this.cityPanel);
+    }
+    const el = this.cityListEl as HTMLDivElement;
+    if (entries.length === 0) {
+      this.cityPanel.style.display = 'none';
+      return;
+    }
+    this.cityPanel.style.display = '';
+    el.replaceChildren(
+      ...entries.map((entry) => {
+        const row = document.createElement('div');
+        row.className = 'city-row';
+        row.textContent =
+          `${entry.name}: ${entry.residents} EW, ${entry.jobs} Jobs | ` +
+          `R${entry.houses} C${entry.shops} I${entry.factories} | ` +
+          `Nf ${Math.round(entry.residential * 100)}/${Math.round(entry.commercial * 100)}/${Math.round(entry.industrial * 100)}%`;
+        row.title = 'Klicken: Kamera auf das Stadtzentrum';
+        row.addEventListener('click', () => onJump(entry.id));
+        return row;
+      }),
+    );
   }
 
   private makePaintButton(tile: TileType, callbacks: HudCallbacks): HTMLButtonElement {

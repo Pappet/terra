@@ -3,17 +3,19 @@
  * Sim-Zugriff läuft ausschliesslich über Actions; das HUD liest nur Zustand.
  */
 import { SIM_CONFIG, VIEW_CONFIG } from '../data/config';
+import { GROWTH } from '../data/cities';
 import { OVERLAYS } from '../data/overlays';
 import { Camera } from '../render/camera';
 import { Minimap } from '../render/minimap';
 import { Renderer } from '../render/renderer';
 import { SimLoop } from '../sim/loop';
+import { computeDemand, computeStats } from '../sim/demand';
 import { World } from '../sim/world';
 import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '../persist/save';
 import { Hud } from './hud';
 import { attachInput } from './input';
 
-type ToolId = 'paint' | 'road' | 'demolish' | 'route' | 'zone';
+type ToolId = 'paint' | 'road' | 'demolish' | 'route' | 'zone' | 'found';
 
 function seedFromUrl(): number {
   const raw = new URLSearchParams(window.location.search).get('seed');
@@ -148,6 +150,14 @@ const input = attachInput(canvas, {
       case 'zone':
         currentWorld.enqueue({ kind: 'paintZone', x, y, zone: activeZone });
         break;
+      case 'found':
+        currentWorld.enqueue({
+          kind: 'foundCity',
+          x,
+          y,
+          name: `Stadt ${currentWorld.cities.count + 1}`,
+        });
+        break;
       case 'demolish':
         currentWorld.enqueue({ kind: 'demolishRoad', x, y });
         break;
@@ -189,6 +199,33 @@ function routeInfoText(): string {
   return `  |  ${finance}  |  Route: ${route.path.length} Tiles, ${route.timeTicks.toFixed(1)} Ticks (~${seconds} s bei 1x)`;
 }
 
+function updateCityPanel(): void {
+  const entries = [];
+  for (let c = 1; c <= currentWorld.cities.count; c++) {
+    const stats = computeStats(c, currentWorld.buildings);
+    const demand = computeDemand(stats);
+    const residents = stats.houses * GROWTH.residentsPerHouse;
+    const jobs = (stats.shops + stats.factories) * GROWTH.jobsPerBuilding;
+    entries.push({
+      id: c,
+      name: currentWorld.cities.names[c - 1] ?? `Stadt ${c}`,
+      residents,
+      jobs,
+      residential: demand.residential,
+      commercial: demand.commercial,
+      industrial: demand.industrial,
+      houses: stats.houses,
+      shops: stats.shops,
+      factories: stats.factories,
+    });
+  }
+  hud.updateCities(entries, (cityId) => {
+    camera.x = currentWorld.cities.x[cityId - 1] ?? camera.x;
+    camera.y = currentWorld.cities.y[cityId - 1] ?? camera.y;
+    camera.clampToMap(currentWorld.width, currentWorld.height);
+  });
+}
+
 function frame(nowMs: number): void {
   const dtSec = Math.min(0.25, Math.max(0, (nowMs - lastFrameMs) / 1000));
   lastFrameMs = nowMs;
@@ -217,6 +254,7 @@ function frame(nowMs: number): void {
       `TERRA  Seed ${currentWorld.seed}  Tick ${currentWorld.tick}  ${speedLabel()}  ${fps} FPS` +
         routeInfoText(),
     );
+    updateCityPanel();
   }
   if (currentWorld.lastRejected !== lastShownRejected) {
     lastShownRejected = currentWorld.lastRejected;

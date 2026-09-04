@@ -1,5 +1,25 @@
 # JOURNAL
 
+## 2026-03-05 – M3.4 Gebäude-Entstehung/-Verfall
+**Gebaut:** `runGrowthTick` pro Tick: (1) Verfall – Gebäude ohne Strassenanschluss (4er-Nachbarschaft) verlieren 0.03 Substanz/Tick und fallen unter 0.25; das gezonte Tile wird wieder Bauland. (2) Neubau – pro Stadt Nachfrage aus M3.3; auf gezonten, angeschlossenen, freien Tiles Bau mit Chance `constructionChance × Nachfrage`, max. 2/Stadt/Tick, Zufall nur über Welt-RNG. `cityZoneTiles` als pro-Stadt-Bauland-Listen (gepflegt von paintZone/addBuildingAt/removeBuildingAt, beim Laden aus den Layern rekonstruiert). Tests: Wachstum von selbst, kein Bau ohne Anschluss, Verfall + Rückkehr ins Bauland, Nachfragekette R→I, Determinismus, Kapazitätsdeckel.
+**Entscheidungen:**
+- Bauland-Listen statt 262k-Tile-Scan pro Tick: O(freie Zonen), Tick bleibt im Budget.
+- "Lage" = Strassenanschluss (M3-DoD-Lesart); Distanz zum Zentrum/Bodenwert kommt in M8.
+- rng.chance wird bei Nachfrage 0 übersprungen (weniger RNG-Verbrauch, gleiche Determinismus-Garantie).
+**Offen:** nichts.
+
+## 2026-03-05 – M3.3 Nachfrage-Modell
+**Gebaut:** `computeDemand` als reine Funktion: Gebäudebestand (R/C/I mit Substanz > Schwelle) -> Nachfrage 0..1 je Zonentyp. Wohnnachfrage = Grunddruck + Arbeitsplatzüberschuss; C/I-Nachfrage aus Einwohner-Zielquoten. Parameter in `GROWTH` (data/cities.ts). Tests: Leerstadt, Job-Überschuss, Gleichgewicht.
+**Entscheidungen:** Vollbelegung (residents = Häuser × 4) in M3; M4 ersetzt sie durch echte Kohorten – der Nachfrage-Code bleibt, die Eingabegrössen werden präziser.
+**Offen:** nichts.
+
+## 2026-03-05 – M3.2 Zonen + Gebäude-Datenmodell
+**Gebaut:** `zoneType`/`zoneCity`-Layer, Action `paintZone` (Land, kein Strassenbau-Tile, keine bebauten Tiles, max. Distanz zum Stadtzentrum, Zuordnung zur nächsten Stadt), `Buildings` als SoA mit `buildingIndex` (Tile -> Gebäude-ID), World-API `addBuildingAt`/`removeBuildingAt` (inkl. Swap-Removal-ID-Pflege im Index), Zonen-Overlay + Zonen-Werkzeug (Wohnen/Gewerbe/Industrie/Aufheben, dragbar), Stadtmarker im Kartenbild, Savegame **v5** (Zonen base64, zoneCity als 2-Byte-LE, Gebäude-SoA; buildingIndex beim Laden abgeleitet).
+**Entscheidungen:**
+- zoneCity als Int16Array mit Little-Endian-2-Byte-Serialisierung (1 Byte würde Stadt-IDs > 255 truncaten).
+- Gebäude-IDs = Arrayposition+1: Swap-Removal verschiebt IDs – der Tile-Index wird in removeBuildingAt nachgezogen (getestet).
+**Offen:** nichts.
+
 ## 2026-03-05 – M3.1 Städte-Datenmodell
 **Gebaut:** `Cities` als SoA (IDs ab 1, Namen/x/y/founded), Action `foundCity` (Land + Mindestabstand), Savegame **v4** mit Städten. ActionContext erweitert um `cities` und `currentTick` (Aktionen gelten als im abschliessenden Tick passiert – Gründungszeitpunkt ist damit eindeutig). Werkzeuge/Marker-Rendering folgen mit M3.2/M3.5.
 **Entscheidungen:**
