@@ -19,8 +19,8 @@ DoD:
 - Minimap; jeder Layer einzeln als Debug-Overlay einblendbar.
 
 Tasks:
-- [~] M1.1 Noise-Basis: Value-Noise (2D, fBm) auf Rng-Basis, DOM-frei getestet
-- [ ] M1.2 Höhen-Layer + Wasserlinie; Kartengrösse auf 512x512, Performance-Check
+- [x] M1.1 Noise-Basis: Value-Noise (2D, fBm) auf Rng-Basis, DOM-frei getestet
+- [~] M1.2 Höhen-Layer + Wasserlinie; Kartengrösse auf 512x512, Performance-Check
 - [ ] M1.3 Flüsse: Abfluss von Höhen-Hochpunkten, Graben zur Senke, Wasser-Layer
 - [ ] M1.4 Fruchtbarkeit + Wald als abgeleitete Layer
 - [ ] M1.5 Vorkommen: Stein, Ton, Kohle, Eisen, Öl (regionalisiert, seed-abhängig)

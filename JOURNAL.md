@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M1.1 Noise-Basis
+**Gebaut:** `/src/worldgen/noise.ts`: `hash2` (32-Bit-Integer-Hash, Seed-abhängig), `valueNoise2` (quintisch interpoliert), `fbm2` (fBm mit gain/lacunarity, normalisiert, Offsets zur Feldtrennung). Tests: Determinismus, Wertebereich, Glattheit, Pin-Werte, exakte Oktaven-Identitäten.
+**Entscheidungen:**
+- Hash-basiert statt sequentiell: Jede Stelle liefert unabhängig von der Abfrage-Reihenfolge denselben Wert – wichtig, weil Weltgen-Schritte (Höhe, Flüsse, Vorkommen) später punktuell nachsample werden.
+- Statistik-Test "mehr Oktaven -> mehr Varianz" verworfen (fragil entlang eines Sample-Pfads); stattdessen exakte Kompositions-Identitäten für octaves=1/2. Lehre: Eigenschaften testen, keine Heuristiken.
+**Offen:** nichts.
+
 ## 2026-03-05 – M0.7 Determinismus-Test + M0-Abschluss
 **Gebaut:** Der DoD-Test: gleicher Seed + gleiche (deterministisch erzeugte) Aktionsliste -> identischer Weltzustand nach 1000 Ticks, einmal direkt getaktet, einmal über SimLoop mit manueller Uhr; zusätzlich Savegame-Roundtrip im deterministischen Lauf und Negativprobe (abweichende Liste -> anderer Zustand). 41 Tests grün, Build grün. **M0 ist damit fertig.**
 **Entscheidungen:**
