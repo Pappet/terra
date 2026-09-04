@@ -13,6 +13,8 @@ import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '..
 import { Hud } from './hud';
 import { attachInput } from './input';
 
+type ToolId = 'paint' | 'road' | 'demolish' | 'route';
+
 function seedFromUrl(): number {
   const raw = new URLSearchParams(window.location.search).get('seed');
   if (raw !== null && raw !== '') {
@@ -35,6 +37,9 @@ minimap.setWorld(initialWorld);
 
 let activePaintTile = 1;
 let activeOverlay = 'surface';
+let activeTool: ToolId = 'road';
+let activeRoadType = 2;
+let routeFrom: number | null = null;
 
 // Minimap: Klick/Drag zentriert die Kamera
 let minimapDragging = false;
@@ -80,6 +85,7 @@ function applyLoadedWorld(next: World): void {
   renderer.setWorld(next);
   minimap.setWorld(next);
   currentWorld = next;
+  routeFrom = null;
   camera.clampToMap(next.width, next.height);
   hud.flash(`Welt geladen: Seed ${next.seed}, Tick ${next.tick}`);
 }
@@ -87,6 +93,15 @@ function applyLoadedWorld(next: World): void {
 const hud = new Hud(hudContainer, {
   onSpeed: applySpeed,
   onOverlay: applyOverlay,
+  onTool: (toolId) => {
+    activeTool = toolId as ToolId;
+    hud.setActiveTool(toolId);
+    routeFrom = null;
+  },
+  onRoadType: (roadId) => {
+    activeRoadType = roadId;
+    hud.setActiveRoadType(roadId);
+  },
   onPaintTile: (tileId) => {
     activePaintTile = tileId;
     hud.setActivePaintTile(tileId);
@@ -116,12 +131,29 @@ const input = attachInput(canvas, {
   camera,
   getMapSize: () => ({ width: currentWorld.width, height: currentWorld.height }),
   paintAt: (tileIndex) => {
-    currentWorld.enqueue({
-      kind: 'paintTile',
-      x: tileIndex % currentWorld.width,
-      y: Math.floor(tileIndex / currentWorld.width),
-      tile: activePaintTile,
-    });
+    const x = tileIndex % currentWorld.width;
+    const y = Math.floor(tileIndex / currentWorld.width);
+    switch (activeTool) {
+      case 'paint':
+        currentWorld.enqueue({ kind: 'paintTile', x, y, tile: activePaintTile });
+        break;
+      case 'road':
+        currentWorld.enqueue({ kind: 'buildRoad', x, y, road: activeRoadType });
+        break;
+      case 'demolish':
+        currentWorld.enqueue({ kind: 'demolishRoad', x, y });
+        break;
+      case 'route': {
+        if (routeFrom === null) {
+          routeFrom = tileIndex;
+          currentWorld.enqueue({ kind: 'clearRoute' });
+        } else {
+          currentWorld.enqueue({ kind: 'requestRoute', from: routeFrom, to: tileIndex });
+          routeFrom = null;
+        }
+        break;
+      }
+    }
     loop.stepOnce();
   },
   togglePause: () => applySpeed(loop.speed === 0 ? 1 : 0),
@@ -139,6 +171,15 @@ let fpsCount = 0;
 let fpsWindowStart = lastFrameMs;
 let fps = 0;
 let statusClock = 0;
+let lastShownRejected: string | null = null;
+
+function routeInfoText(): string {
+  const route = currentWorld.route;
+  const finance = `Kasse ${Math.floor(currentWorld.treasury)} (Unterhalt ${currentWorld.upkeepPerTick.toFixed(2)}/Tick)`;
+  if (route === null) return `  |  ${finance}`;
+  const seconds = Math.round((route.timeTicks / 20) * 10) / 10;
+  return `  |  ${finance}  |  Route: ${route.path.length} Tiles, ${route.timeTicks.toFixed(1)} Ticks (~${seconds} s bei 1x)`;
+}
 
 function frame(nowMs: number): void {
   const dtSec = Math.min(0.25, Math.max(0, (nowMs - lastFrameMs) / 1000));
@@ -165,8 +206,13 @@ function frame(nowMs: number): void {
   if (statusClock >= 0.25) {
     statusClock = 0;
     hud.setInfo(
-      `TERRA  Seed ${currentWorld.seed}  Tick ${currentWorld.tick}  ${speedLabel()}  ${fps} FPS`,
+      `TERRA  Seed ${currentWorld.seed}  Tick ${currentWorld.tick}  ${speedLabel()}  ${fps} FPS` +
+        routeInfoText(),
     );
+  }
+  if (currentWorld.lastRejected !== lastShownRejected) {
+    lastShownRejected = currentWorld.lastRejected;
+    if (lastShownRejected !== null) hud.flash(lastShownRejected);
   }
 
   requestAnimationFrame(frame);

@@ -2,7 +2,14 @@
  * Debug-/Ansichts-Overlays (M1): welche Ebene sichtbar ist und wie sie
  * dargestellt wird. Nur Daten – die Farblogik liegt in render/overlay.ts.
  */
-export type OverlayKind = 'surface' | 'gradient' | 'boolean' | 'water' | 'bitmask';
+export type OverlayKind =
+  | 'surface'
+  | 'gradient'
+  | 'boolean'
+  | 'water'
+  | 'bitmask'
+  | 'roads'
+  | 'route';
 
 export interface OverlayDef {
   readonly id: string;
@@ -20,6 +27,8 @@ export interface OverlayDef {
 
 export const OVERLAYS: readonly OverlayDef[] = [
   { id: 'surface', name: 'Oberfläche', kind: 'surface' },
+  { id: 'roads', name: 'Strassen', kind: 'roads' },
+  { id: 'route', name: 'Route', kind: 'route' },
   { id: 'elevation', name: 'Höhe', kind: 'gradient', layer: 'elevation', min: '#0a0d12', max: '#e8e4d8' },
   { id: 'water', name: 'Wasser', kind: 'water' },
   { id: 'fertility', name: 'Fruchtbarkeit', kind: 'gradient', layer: 'fertility', min: '#5a3a1e', max: '#4ea44e' },

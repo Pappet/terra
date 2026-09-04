@@ -3,12 +3,16 @@
  * Reines DOM mit Callbacks nach unten – keine Spiellogik, kein Sim-Zugriff.
  */
 import { OVERLAYS } from '../data/overlays';
+import { ROAD_TYPES } from '../data/roads';
+import { TOOLS } from '../data/tools';
 import { TILE_TYPES, type TileType } from '../data/tiles';
 
 export interface HudCallbacks {
   onSpeed(speed: number): void;
   onPaintTile(tileId: number): void;
   onOverlay(overlayId: string): void;
+  onTool(toolId: string): void;
+  onRoadType(roadId: number): void;
   onSave(): void;
   onLoad(): void;
   onExport(): void;
@@ -29,6 +33,10 @@ export class Hud {
   private readonly speedButtons = new Map<number, HTMLButtonElement>();
   private readonly paintButtons = new Map<number, HTMLButtonElement>();
   private readonly overlayButtons = new Map<string, HTMLButtonElement>();
+  private readonly toolButtons = new Map<string, HTMLButtonElement>();
+  private readonly roadButtons = new Map<number, HTMLButtonElement>();
+  private readonly roadRow: HTMLDivElement;
+  private readonly paintRow: HTMLDivElement;
   private readonly fileInput: HTMLInputElement;
   private flashTimer: number | undefined;
 
@@ -59,14 +67,37 @@ export class Hud {
       speedPanel.append(b);
     }
 
-    // Tile-Palette unten links
+    // Werkzeuge unten mittig; Kontextzeile (Palette/Strassentypen) unten links
+    const toolPanel = document.createElement('div');
+    toolPanel.className = 'panel bottom-center';
+    for (const tool of TOOLS) {
+      const b = button(tool.name, () => callbacks.onTool(tool.id), tool.hint);
+      this.toolButtons.set(tool.id, b);
+      toolPanel.append(b);
+    }
+
     const paintPanel = document.createElement('div');
     paintPanel.className = 'panel bottom-left';
-    paintPanel.append(hudLabel('Malen:'));
+    this.paintRow = document.createElement('div');
+    this.paintRow.className = 'row';
+    this.paintRow.append(hudLabel('Malen:'));
     for (const tile of TILE_TYPES) {
       this.paintButtons.set(tile.id, this.makePaintButton(tile, callbacks));
-      paintPanel.append(this.paintButtons.get(tile.id)!);
+      this.paintRow.append(this.paintButtons.get(tile.id)!);
     }
+    this.roadRow = document.createElement('div');
+    this.roadRow.className = 'row';
+    this.roadRow.append(hudLabel('Bauen:'));
+    for (const road of ROAD_TYPES) {
+      const b = button(
+        `${road.name} ${road.buildCost}`,
+        () => callbacks.onRoadType(road.id),
+        `Bau ${road.buildCost}, Unterhalt ${road.upkeepPerTick}/Tick, Tempo ${road.speedTilesPerTick}/Tick`,
+      );
+      this.roadButtons.set(road.id, b);
+      this.roadRow.append(b);
+    }
+    paintPanel.append(this.roadRow, this.paintRow);
 
     // Overlay-Umschalter oben mittig
     const overlayPanel = document.createElement('div');
@@ -98,10 +129,12 @@ export class Hud {
       this.fileInput,
     );
 
-    container.append(statusPanel, speedPanel, overlayPanel, paintPanel, savePanel);
+    container.append(statusPanel, speedPanel, overlayPanel, toolPanel, paintPanel, savePanel);
     this.setActiveSpeed(1);
     this.setActivePaintTile(1);
     this.setActiveOverlay('surface');
+    this.setActiveTool('road');
+    this.setActiveRoadType(2);
   }
 
   private makePaintButton(tile: TileType, callbacks: HudCallbacks): HTMLButtonElement {
@@ -131,6 +164,20 @@ export class Hud {
   setActiveOverlay(overlayId: string): void {
     for (const [id, b] of this.overlayButtons) {
       b.classList.toggle('active', id === overlayId);
+    }
+  }
+
+  setActiveTool(toolId: string): void {
+    for (const [id, b] of this.toolButtons) {
+      b.classList.toggle('active', id === toolId);
+    }
+    this.paintRow.style.display = toolId === 'paint' ? '' : 'none';
+    this.roadRow.style.display = toolId === 'road' ? '' : 'none';
+  }
+
+  setActiveRoadType(roadId: number): void {
+    for (const [id, b] of this.roadButtons) {
+      b.classList.toggle('active', id === roadId);
     }
   }
 

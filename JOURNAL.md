@@ -1,5 +1,20 @@
 # JOURNAL
 
+## 2026-03-05 – M2.4 Werkzeug-UI + Strassen-/Routen-Overlays
+**Gebaut:** Werkzeuge (Malen / Strasse / Abriss / Route) unten mittig; Kontextzeile zeigt je nach Werkzeug Tile-Palette oder Strassentypen mit Kosten-Tooltip. Route-Werkzeug zweiphasig (Klick Start, Klick Ziel); Drag baut/reisst kontinuierlich ab. Neue Overlays "Strassen" und "Route" (Oberflächenbasis + Highlight, Start/Ziel farblich); Oberflächen- und Minimap-Darstellung überprägt Strassen. `lastRejected` wird als HUD-Flash angezeigt, Infozeile zeigt Pfadlänge + Reisezeit.
+**Entscheidungen:**
+- Strassenfarbe überprägt die Oberfläche im Normalmodus – kein Extra-Umschalten nötig, um Bauergebnis zu sehen.
+- Route-Werkzeug bewusst zweiphasig statt Drag: Ziehen würde ungewollt Zwischenziele anfragen; bei Bedarf später Drag-Variante.
+- HUD-Refaktor lief eine Weile schief (halb angewandter Edit); Konstruktorbereich wurde komplett neu geschrieben – Lehre: bei mehrteiligen Edits in einer Datei lieber ganz neu schreiben.
+**Offen:** nichts.
+
+## 2026-03-05 – M2.3 Reisezeit-Modell + Routen-Action
+**Gebaut:** Terrain-Faktoren auf offroad-Tempo (`TERRAIN_OFFROAD_FACTOR`, Wald 0.6/Fels 0.7/Wasser 0) in `/src/data/roads.ts`; `PathfindingContext.tiles` erweitert; Actions `requestRoute`/`clearRoute`; World hält eine PathFinder-Instanz (Cache-Wiederverwendung über tileRev) und speichert das Ergebnis als `world.route` (Snapshot mit rev, transient – nicht im Savegame, weil reines Anzeige-Derivat). Tests: Tempo-Formeln, waldfreie Routen bevorzugt, Route setzen/löschen/unmöglich, Reaktion auf neue Strassen, Determinismus inkl. Route (equalWorlds vergleicht sie jetzt).
+**Entscheidungen:**
+- Route ist Teil des deterministischen Zustands (Action-Ergebnis) aber Savegame-transient: Nach dem Laden existiert sie nicht – sie ist ein Werkzeug-Overlay, kein Weltbestandteil.
+- Strassen ignorieren Terrain bewusst: Ausbau gleicht das Terrain aus (einfaches, ehrliches Modell).
+**Offen:** nichts.
+
 ## 2026-03-05 – M2.2 Grid-Graph + A* mit Cache
 **Gebaut:** `PathFinder` mit Binär-Heap (lazy deletion, deterministischer Tie-Break über Node-Index), Octile-Heuristik geteilt durch beste Geschwindigkeit (zulässig -> optimal), Kantenkosten = 1/Tempo des Zielfelds (Strassentyp oder offroad), Wasser unpassierbar. Ergebnis-Cache mit Revisions-Schlüssel (World.tileRev) – Strassenänderungen invalidieren automatisch; Cache-Hits melden `visited: 0`. Bequemer Einzelfall `findPath()` ohne Cache-Wiederverwendung für Tests.
 **Entscheidungen:**

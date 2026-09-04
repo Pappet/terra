@@ -16,6 +16,7 @@ import { Rng } from './rng';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
+import { ROAD_BY_ID } from '../data/roads';
 import { generateDeposits } from '../worldgen/deposits';
 import { generateDerived, type DerivedLayers } from '../worldgen/derived';
 import { generateTerrain } from '../worldgen/terrain';
@@ -72,6 +73,8 @@ export class World {
   route: { readonly path: readonly number[]; readonly timeTicks: number; readonly rev: number } | null = null;
   /** Vom Tick auszuwertende Routenanfrage (ActionContext-Kontrakt). */
   routeRequest: { from: number; to: number } | null = null;
+  /** Laufende Unterhaltskosten pro Tick (wird bei Strassenänderungen neu berechnet). */
+  upkeepPerTick = 0;
   /** Erhöht sich bei jeder Änderung an sichtbaren Layerdaten (tiles/roads). */
   tileRev = 0;
 
@@ -98,18 +101,22 @@ export class World {
     this.queue.push(action);
   }
 
-  /** Ein Sim-Tick: wartende Actions anwenden, Routenanfrage auswerten, Uhr weitersetzen. */
+  /** Ein Sim-Tick: Unterhalt für den Bestand, dann Actions, dann Route auswerten. */
   update(): void {
     this.lastRejected = null;
+    this.treasury -= this.upkeepPerTick; // Bestand zu Tickbeginn, Bautick selbst gratis
+    let roadsChanged = false;
     let routeDirty = false;
     if (this.queue.length > 0) {
       for (const action of this.queue) {
         applyAction(this, action);
+        if (action.kind === 'buildRoad' || action.kind === 'demolishRoad') roadsChanged = true;
         if (action.kind === 'requestRoute' || action.kind === 'clearRoute') routeDirty = true;
       }
       this.tileRev++;
       this.queue = [];
     }
+    if (roadsChanged) this.recomputeUpkeep(); // wirkt ab dem nächsten Tick
     if (routeDirty && this.routeRequest !== null) {
       const { from, to } = this.routeRequest;
       this.routeRequest = null;
@@ -123,8 +130,18 @@ export class World {
             : { path: result.path, timeTicks: result.timeTicks, rev: this.tileRev };
       }
     }
-    // M2.5: Unterhaltskosten pro Tick verbuchen.
+    // M2.5: Unterhaltskosten pro Tick verbuchen (siehe oben).
     this.tick++;
+  }
+
+  /** Summiert Unterhaltskosten über alle Strassentiles (nur bei Änderungen). */
+  private recomputeUpkeep(): void {
+    let upkeep = 0;
+    for (let i = 0; i < this.roads.length; i++) {
+      const road = ROAD_BY_ID.get(this.roads[i] ?? 0);
+      if (road !== undefined) upkeep += road.upkeepPerTick;
+    }
+    this.upkeepPerTick = upkeep;
   }
 
   private routeContext(): ActionContext & { rev: number } {
@@ -224,6 +241,7 @@ export class World {
     }
     world.layers = layers;
     world.tick = tick;
+    world.recomputeUpkeep();
     world.rng = Rng.fromState(asUint32(d.rngState, 'rngState'));
     return world;
   }

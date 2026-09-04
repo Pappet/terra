@@ -55,16 +55,14 @@ describe('Strassen (M2.1)', () => {
     const y = Math.floor(landIdx / w.width);
     const path = ROAD_TYPES[0]!;
     const road = ROAD_TYPES[1]!;
+    // Alle drei Baubeschlüsse in einem Tick, Reihenfolge bleibt erhalten:
+    // Pfad bauen, Pfad nochmal (gratis), auf Strasse ausbauen.
     w.enqueue({ kind: 'buildRoad', x, y, road: path.id });
-    w.update();
-    const afterPath = w.treasury;
     w.enqueue({ kind: 'buildRoad', x, y, road: path.id });
-    w.update();
-    expect(w.treasury).toBe(afterPath); // bereits so -> keine Kosten
     w.enqueue({ kind: 'buildRoad', x, y, road: road.id });
     w.update();
     expect(w.roads[landIdx]).toBe(road.id);
-    expect(w.treasury).toBeCloseTo(afterPath - road.buildCost, 9);
+    expect(w.treasury).toBeCloseTo(500 - path.buildCost - road.buildCost, 9);
   });
 
   it('Abriss entfernt die Strasse ohne Erstattung', () => {
@@ -77,7 +75,8 @@ describe('Strassen (M2.1)', () => {
     w.enqueue({ kind: 'demolishRoad', x, y });
     w.update();
     expect(w.roads[landIdx]).toBe(0);
-    expect(w.treasury).toBe(afterBuild);
+    // Keine Erstattung; der Abriss-Tick hat den Unterhalt des Bestands abgezogen.
+    expect(w.treasury).toBeCloseTo(afterBuild - ROAD_TYPES[0]!.upkeepPerTick, 9);
   });
 
   it('alle Strassentypen sind baubar und im Savegame stabil', () => {

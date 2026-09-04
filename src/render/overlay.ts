@@ -7,6 +7,7 @@ import {
   overlayById,
   type OverlayDef,
 } from '../data/overlays';
+import { ROAD_BY_ID, ROAD_TYPES } from '../data/roads';
 import { TILE_TYPES } from '../data/tiles';
 import type { World } from '../sim/world';
 
@@ -15,6 +16,12 @@ interface Rgb {
   g: number;
   b: number;
 }
+
+const roadColors = ROAD_TYPES.map((r) => hexToRgb(r.color));
+const roadColorById = new Map<number, Rgb>(ROAD_TYPES.map((r) => [r.id, hexToRgb(r.color)]));
+const routeHighlight = hexToRgb('#e08a3c');
+const routeStart = hexToRgb('#ffd27a');
+const routeGoal = hexToRgb('#ff5f4a');
 
 function hexToRgb(hex: string): Rgb {
   const n = Number.parseInt(hex.slice(1), 16);
@@ -61,7 +68,40 @@ export function fillTileColors(world: World, overlayId: string, rgba: Uint8Clamp
     case 'surface': {
       const colors = TILE_TYPES.map((t) => hexToRgb(t.color));
       for (let i = 0; i < width * height; i++) {
-        const c = colors[tiles[i] ?? 0] ?? fallback;
+        const road = ROAD_BY_ID.get(world.roads[i] ?? 0);
+        // Strassen überprägen die Oberfläche (sichtbar im normalen Kartenbild).
+        const c = road !== undefined ? (roadColorById.get(road.id) ?? fallback) : (colors[tiles[i] ?? 0] ?? fallback);
+        rgba[i * 4] = c.r;
+        rgba[i * 4 + 1] = c.g;
+        rgba[i * 4 + 2] = c.b;
+        rgba[i * 4 + 3] = 255;
+      }
+      return;
+    }
+    case 'roads': {
+      const base = hexToRgb('#10140f');
+      for (let i = 0; i < width * height; i++) {
+        const road = ROAD_BY_ID.get(world.roads[i] ?? 0);
+        const c = road === undefined ? base : (roadColors[ROAD_TYPES.findIndex((r) => r.id === road.id)] ?? fallback);
+        rgba[i * 4] = c.r;
+        rgba[i * 4 + 1] = c.g;
+        rgba[i * 4 + 2] = c.b;
+        rgba[i * 4 + 3] = 255;
+      }
+      return;
+    }
+    case 'route': {
+      // Oberflächenbasis + Routen-Highlight
+      const colors = TILE_TYPES.map((t) => hexToRgb(t.color));
+      const route = world.route;
+      const onPath = new Set<number>(route?.path ?? []);
+      const start = route !== null && route.path.length > 0 ? route.path[0] : -1;
+      const goal = route !== null && route.path.length > 0 ? route.path[route.path.length - 1] : -1;
+      for (let i = 0; i < width * height; i++) {
+        let c = colors[tiles[i] ?? 0] ?? fallback;
+        const road = ROAD_BY_ID.get(world.roads[i] ?? 0);
+        if (road !== undefined) c = roadColorById.get(road.id) ?? c;
+        if (onPath.has(i)) c = i === start ? routeStart : i === goal ? routeGoal : routeHighlight;
         rgba[i * 4] = c.r;
         rgba[i * 4 + 1] = c.g;
         rgba[i * 4 + 2] = c.b;
