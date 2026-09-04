@@ -50,6 +50,14 @@ export class SimLoop {
   }
 
   /**
+   * Genau einen Tick erzwingen – von der UI genutzt, um Editor-Actions auch
+   * bei Pause anzuwenden, ohne die Uhr laufen zu lassen.
+   */
+  stepOnce(): void {
+    this.world.update();
+  }
+
+  /**
    * Ein Frame: verstrichene Zeit in Ticks umsetzen. Liefert, wie viele Ticks
    * gelaufen sind (Renderer-Cache-Invalidierung).
    *

@@ -12,8 +12,8 @@ Tasks:
 - [x] M0.1 Projektgerüst: Vite+TS+Vitest, Ordnerstruktur, Docs
 - [x] M0.2 Seeded RNG (mulberry32) mit Zustands-Export für Savegames + Tests
 - [x] M0.3 Weltzustand (TypedArrays), Action-Pipeline, Savegame-Serialisierung + Tests
-- [~] M0.4 Fixed-Tick-Loop mit Geschwindigkeitsstufen, entkoppelt vom Rendering + Tests
-- [ ] M0.5 Kamera (Pan/Zoom/Tastatur) + Canvas-Rendering mit Layer-Caching
+- [x] M0.4 Fixed-Tick-Loop mit Geschwindigkeitsstufen, entkoppelt vom Rendering + Tests
+- [~] M0.5 Kamera (Pan/Zoom/Tastatur) + Canvas-Rendering mit Layer-Caching
 - [ ] M0.6 UI: HUD (Speed, Seed, Tick), Paint-Tool, IndexedDB-Save + Datei-Export/Import
 - [ ] M0.7 Determinismus-Test (1000 Ticks, identischer Zustand) + Build grün
 

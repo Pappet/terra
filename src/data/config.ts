@@ -22,3 +22,16 @@ export const SIM_CONFIG = {
 /** Wählbare Simulationsgeschwindigkeit: Pause, 1x, 3x, 10x. */
 export const SPEED_STEPS = [0, 1, 3, 10] as const;
 export type SimSpeed = (typeof SPEED_STEPS)[number];
+
+/** Kamera/Ansicht – Engine-Werte, keine Spielbalance. */
+export const VIEW_CONFIG = {
+  minZoom: 1,
+  maxZoom: 48,
+  defaultZoom: 8,
+  /** Zoomfaktor pro Mausrad-Rasterung. */
+  wheelZoomFactor: 1.15,
+  /** Kamera-Pan über Tastatur, in Tiles pro Sekunde. */
+  keyPanTilesPerSecond: 24,
+  /** Ab diesem Zoom werden Tile-Grenzen gezeichnet. */
+  gridLineMinZoom: 8,
+} as const;
