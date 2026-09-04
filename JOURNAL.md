@@ -1,5 +1,16 @@
 # JOURNAL
 
+## 2026-03-05 – M4.7 DoD-Nachweis + M4-Abschluss
+**Gebaut:** m4.proof.test.ts: Drei Städte in einer Reihe, Jobs nur in der mittleren — beide Nachbarstädte pendeln dorthin (geteilter Arbeitsmarkt, openJobs sinken), Pfad-Kapazität deckelt jeden Fluss bei 10, Chaussee-Ausbau hebt auf workerlimitiert 18 (Reaktivität). 171 Tests grün, Build grün. **M4 ist damit fertig.**
+**Entscheidungen:**
+- Reaktivitäts-Test auf der fake-Zeilenwelt über assignWorkers + Rev-Sprung; die Action→Dirty→Update-Verkabelung ist separat in employment.test abgedeckt — kleine Einheiten statt einer riesigen Integration.
+**Offen:** Manuelle Browser-Abnahme durch Peter (FRAGEN.md); M5 (Wirtschaft) beginnt.
+
+## 2026-03-05 – M4.6 Pendler-Overlay + Panel-Erweiterung
+**Gebaut:** Overlay "Pendler": Oberflächenbasis + Linien zwischen Stadtzentren, Strichstärke logarithmisch zum Fluss; Zufriedenheit in Prozent im Stadt-Panel. Reaktivität auf neue Strassen ist bereits durch den M4.4-Test gedeckt (bessere Strasse erhöht Korridorfluss).
+**Entscheidungen:** Linien bewusst pro Frame gezeichnet (nicht im Tile-Cache) – sie hängen von commute ab, das sich ohne tileRev-Änderung theoretisch ändern kann; ein Stroke pro Paar ist billig.
+**Offen:** M4.7 (DoD-Nachweis).
+
 ## 2026-03-05 – M4.5 Zufriedenheit + Zuzug/Wegzug
 **Gebaut:** `computeSatisfaction` (0..1 aus Beschäftigungsanteil ×0.45, Pendelzeit ×0.25 gegen Toleranz 60 Ticks, Wohnraum ×0.3) und `runMigration` im Demografie-Intervall: Zuzug ab 0.6 in freie Wohnkapazität (junge Erwachsene, Bildung per RNG), Wegzug unter 0.35 proportional über alle Kohorten. Läuft über `World.settleResidents` (neue API, setzt commuteDirty). Tests: Zufriedenheits-Sensitivität (Jobs ↑, Überbevölkerung ↓), Zuzug wächst innerhalb Kapazität, Wegzug schrumpft, Determinismus.
 **Entscheidungen:**

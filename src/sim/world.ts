@@ -18,6 +18,7 @@ import { Population } from './population';
 import { Rng } from './rng';
 import { runGrowthTick } from './growth';
 import { runDemographicsTick, runMigration } from './demographics';
+import { Storage } from './storage';
 import { assignWorkers, type EmploymentState } from './employment';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
@@ -51,6 +52,7 @@ export interface SerializedWorld {
   zoneType: string;
   zoneCity: string;
   population: number[][];
+  storage: number[][];
   layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
@@ -90,6 +92,8 @@ export class World {
   cityZoneTiles: number[][];
   /** Bevölkerung als Kohorten pro Stadt. */
   population: Population;
+  /** Lagerbestände pro Stadt (Güter laut /src/data/goods.ts). */
+  storage: Storage;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
@@ -130,6 +134,7 @@ export class World {
     this.buildingIndex = new Int32Array(width * height);
     this.cityZoneTiles = [];
     this.population = new Population();
+    this.storage = new Storage();
   }
 
   /** Zonen-Tile-Listen aus den Layern rekonstruieren (Laden, Aktionen pflegen sie sonst). */
@@ -259,6 +264,7 @@ export class World {
   /** Hält Bevölkerungs-Vektoren mit der Stadtanzahl synchron (Gründung/Laden). */
   private syncPopulation(): void {
     this.population.ensureCity(this.cities.count);
+    this.storage.ensureCity(this.cities.count);
   }
 
   /**
@@ -334,6 +340,7 @@ export class World {
       zoneType: bytesToBase64(this.zoneType),
       zoneCity: bytesToBase64(int16ToBytes(this.zoneCity)),
       population: this.population.serialize(),
+      storage: this.storage.serialize(),
       layers,
       rngState: this.rng.stateU32,
     };
@@ -374,6 +381,7 @@ export class World {
     world.buildings = Buildings.deserialize(d.buildings);
     world.zoneType = decodeLayer(d.zoneType, 'zoneType', size, 0, 3);
     world.population = Population.deserialize(d.population);
+    world.storage = Storage.deserialize(d.storage);
     if (world.population.perCity.length < world.cities.count) {
       throw new Error('Savegame: Bevölkerungsvektoren fehlen für geladene Städte');
     }
@@ -477,7 +485,8 @@ export function equalWorlds(a: World, b: World): boolean {
     a.buildings.count !== b.buildings.count ||
     JSON.stringify(a.cities.serialize()) !== JSON.stringify(b.cities.serialize()) ||
     JSON.stringify(a.buildings.serialize()) !== JSON.stringify(b.buildings.serialize()) ||
-    JSON.stringify(a.population.serialize()) !== JSON.stringify(b.population.serialize())
+    JSON.stringify(a.population.serialize()) !== JSON.stringify(b.population.serialize()) ||
+    JSON.stringify(a.storage.serialize()) !== JSON.stringify(b.storage.serialize())
   ) {
     return false;
   }

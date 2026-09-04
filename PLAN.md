@@ -28,25 +28,38 @@ wächst von selbst (DoD-Test m3.proof.test.ts).
 Tasks: M3.1 Städte-SoA · M3.2 Zonen+Gebäude · M3.3 Nachfrage · M3.4 Wachstums-Tick ·
 M3.5 Panel/Werkzeug · M3.6 Wachstums-Nachweis.
 
-## M4 – Menschen (AKTUELL)
+## M4 – Menschen (ABGESCHLOSSEN)
+
+DoD erfüllt: Bevölkerung als Kohorten (Alter/Bildung/Einkommen), Arbeitsplätze mit
+Zuweisung Wohnort→Job über A* (städtepaarweise aggregiert), Stau/Korridorkapazität dämpft,
+Zufriedenheit + Zuzug/Wegzug, Pendeln über Stadtgrenzen; Pendler-Overlay; DoD-Test
+m4.proof.test.ts (geteilter Arbeitsmarkt, Reaktivität auf Strassenausbau).
+Tasks: M4.1 Kohorten · M4.2 Dynamik · M4.3 Jobs/Zuweisung · M4.4 Korridore ·
+M4.5 Zufriedenheit/Migration · M4.6 Overlay · M4.7 Nachweis.
+
+## M5 – Wirtschaft (AKTUELL)
 
 DoD:
-- Bevölkerung als Kohorten (Alter, Bildung, Einkommen).
-- Arbeitsplätze; Zuweisung Wohnort→Arbeitsplatz über den Graphen.
-- Reisezeit und Stau wirken auf die Zuweisung zurück.
-- Zufriedenheit, Zuzug und Wegzug.
-- Pendeln über Stadtgrenzen hinweg ist ausdrücklich erlaubt; Pendleraufkommen im
-  Overlay sichtbar und reagiert auf neue Strassen.
-- DoD: Zwei nahe Städte teilen sich einen Arbeitsmarkt.
+- Produktionsketten (Rohstoff → Zwischengut → Konsumgut).
+- Lagerbestände, lokale Preise aus Angebot und Nachfrage.
+- Arbeitskraft als Input.
+- Performance-Review: falls der Tick das Budget (16 ms) reisst, jetzt in den Web Worker umziehen.
+- DoD: Ein Engpass in einer Vorstufe schlägt messbar auf die nachgelagerte Produktion durch.
 
 Tasks:
-- [x] M4.1 Kohorten-Datenmodell: pro Stadt Alters-/Bildungs-/Einkommens-Buckets (TypedArrays), Savegame v6
-- [x] M4.2 Bevölkerungsdynamik: Alterung, Geburten/Sterbefälle, Wohnkapazität begrenzt
-- [x] M4.3 Arbeitsplätze aus Gebäuden (R/C/I), Erwerbsquote, Zuweisung Wohnort->Job über A*
-- [x] M4.4 Pendler-Modell: Job-Zuweisung über Stadtgrenzen nach Reisezeit; Stau/Kapazität dämpft
-- [x] M4.5 Zufriedenheit + Zuzug/Wegzug (reagiert auf Jobs, Pendelzeit, Wohnraum)
-- [~] M4.6 Pendler-Overlay (Flüsse zwischen Städten), Reaktivität auf neue Strassen getestet
-- [ ] M4.7 DoD-Nachweis: zwei nahe Städte teilen sich einen Arbeitsmarkt (deterministisch)
+- [~] M5.1 Güter- und Rezept-Tabellen in /src/data (Holz, Stein, Erz, Bretter, Werkzeug, Nahrung, ...), Lagerbestände pro Stadt (SoA/Float64Array)
+- [ ] M5.2 Produktions-Tick: Gebäude wandeln Inputs unter Einsatz von Arbeitskraft in Outputs, engpassgetrieben
+- [ ] M5.3 Lokale Preise aus Angebot/Nachfrage (Preisanpassung pro Gut und Stadt, deterministisch)
+- [ ] M5.4 Bau-/Unterhaltskosten an Wirtschaft koppeln (Kasse/Einnahmen aus Steuern vorbereiten)
+- [ ] M5.5 Performance-Review: Tick-Zeit messen (512er-Karte, 10 Städte); ggf. Worker-Umzug
+- [ ] M5.6 DoD-Nachweis: Vorstufen-Engpass schlägt auf nachgelagerte Produktion durch (deterministisch)
+
+## M6 – Handel (nächster Meilenstein, noch nicht zerlegt)
+
+DoD: Güterflüsse zwischen Städten entlang des Netzes; Handel entsteht, wenn die
+Preisdifferenz die Transportkosten übersteigt; Transportkapazität begrenzt, Routen
+können verstopfen; Import/Export-Bilanz pro Stadt; DoD: rohstoffreiche und
+industrielle Stadt spezialisieren sich von selbst.
 
 ## M4 – Menschen (nächster Meilenstein, noch nicht zerlegt)
 
