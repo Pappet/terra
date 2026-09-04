@@ -1,5 +1,10 @@
 # JOURNAL
 
+## 2026-03-05 – M3.5 Gründen-Werkzeug + Stadt-Panel
+**Gebaut:** Werkzeug "Gründen" (Klick auf Land -> foundCity mit Auto-Name), Stadt-Panel links: pro Stadt Name, Einwohner (Vollbelegung), Jobs, Gebäudezahl R/C/I und Nachfrage-Prozente; Klick springt mit der Kamera zum Zentrum; Panel aktualisiert 4×/s, verschwindet ohne Städte.
+**Entscheidungen:** Panel liest Sim-Zustand direkt (computeStats/computeDemand) statt Snapshot-Structs – Lesen ist nebenläufig gefahrlos, solange nur im UI-Frame zugegriffen wird; Worker-Umzug (M5) führt dann echte Snapshot-Grenzen ein.
+**Offen:** nichts.
+
 ## 2026-03-05 – M3.4 Gebäude-Entstehung/-Verfall
 **Gebaut:** `runGrowthTick` pro Tick: (1) Verfall – Gebäude ohne Strassenanschluss (4er-Nachbarschaft) verlieren 0.03 Substanz/Tick und fallen unter 0.25; das gezonte Tile wird wieder Bauland. (2) Neubau – pro Stadt Nachfrage aus M3.3; auf gezonten, angeschlossenen, freien Tiles Bau mit Chance `constructionChance × Nachfrage`, max. 2/Stadt/Tick, Zufall nur über Welt-RNG. `cityZoneTiles` als pro-Stadt-Bauland-Listen (gepflegt von paintZone/addBuildingAt/removeBuildingAt, beim Laden aus den Layern rekonstruiert). Tests: Wachstum von selbst, kein Bau ohne Anschluss, Verfall + Rückkehr ins Bauland, Nachfragekette R→I, Determinismus, Kapazitätsdeckel.
 **Entscheidungen:**

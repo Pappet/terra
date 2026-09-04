@@ -33,8 +33,8 @@ Tasks:
 - [x] M3.2 Zonen als Layer + Zonen-Werkzeug/Actions, Gebäude-Datenmodell (SoA)
 - [x] M3.3 Nachfrage-Modell (R/C/I im Gleichgewicht, Wachstumsdruck aus Anschluss/Lage)
 - [x] M3.4 Gebäude-Entstehung/-Verfall pro Tick (gezont + angeschlossen -> Bau; ohne Anschluss -> Verfall)
-- [~] M3.5 Stadt-Panel (Bevölkerung/Zonen/Gebäude), Debug-Overlay Zonen/Gebäude, Savegame
-- [ ] M3.6 Wachstums-Nachweis: gezonte angeschlossene Stadt wächst; nicht angeschlossene schrumpft
+- [x] M3.5 Stadt-Panel (Bevölkerung/Zonen/Gebäude), Debug-Overlay Zonen/Gebäude, Savegame
+- [~] M3.6 Wachstums-Nachweis: gezonte angeschlossene Stadt wächst; nicht angeschlossene schrumpft
 
 ## M4 – Menschen (nächster Meilenstein, noch nicht zerlegt)
 
