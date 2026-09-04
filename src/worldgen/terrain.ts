@@ -7,14 +7,20 @@
  */
 import { WORLDGEN } from '../data/worldgen';
 import { fbm2 } from './noise';
+import { generateRivers } from './rivers';
 
-export interface TerrainLayers {
+export interface BaseTerrainLayers {
   readonly width: number;
   readonly height: number;
-  /** Normalisierte Höhe 0..255. */
+  /** Normalisierte Höhe 0..255 (nach Fluss-Carving: effektive Höhe). */
   readonly elevation: Uint8Array;
-  /** 1 = Wasser, 0 = Land. */
+  /** 1 = Wasser (Meer, See, Fluss), 0 = Land. */
   readonly water: Uint8Array;
+}
+
+export interface TerrainLayers extends BaseTerrainLayers {
+  /** 1 = Flusstile (Teilmenge von water). */
+  readonly river: Uint8Array;
 }
 
 export function generateTerrain(seed: number, width: number, height: number): TerrainLayers {
@@ -58,5 +64,6 @@ export function generateTerrain(seed: number, width: number, height: number): Te
     }
   }
 
-  return { width, height, elevation, water };
+  const river = generateRivers(seed, { width, height, elevation, water });
+  return { width, height, elevation, water, river };
 }

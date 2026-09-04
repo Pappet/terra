@@ -17,4 +17,14 @@ export const WORLDGEN = {
   seaLevel: 0.38,
   /** Rand-Falloff: ab diesem Abstand (in Kartenanteil) sinkt die Höhe zum Ozean. */
   edgeFalloffStart: 0.72,
+  rivers: {
+    /** Anzahl Flussquellen (Versuch, gedrosselt durch Abstand). */
+    sources: 28,
+    /** Mindesthöhe einer Quelle, Anteil von 255. */
+    minElevation: 0.55,
+    /** Mindestabstand zwischen Quellen in Tiles. */
+    minSpacing: 20,
+    /** Maximale Schritte pro Fluss (Deckel gegen Endlosschleifen auf Plateaus). */
+    maxSteps: 1200,
+  },
 } as const;

@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M1.3 Flüsse
+**Gebaut:** `generateRivers`: Quellen = höchste Landtiles mit Mindestabstand (gierig, deterministisch per Höhen-/Index-Tiebreak), Abstieg zum tiefsten 8er-Nachbarn mit Carving (Nachbar wird unter aktuelle Höhe gegraben -> Tälern), Mündung bei Kontakt mit Meer/See/Fluss, `river`-Layer als Teilmenge von `water`. `generateTerrain` liefert jetzt `{elevation, water, river}`. Tests: Reproduzierbarkeit, river⊆water, mindestens eine Meeresmündung pro Seed, Wasseranteil-Bounds, 512er-Perf.
+**Entscheidungen:**
+- Carving mutiert die Höhen weiter: Die Höhe gilt danach als "effektive Höhe inkl. Flussgräben" – spätere Layer (Fruchtbarkeit, Bodenwert) profitieren von realen Tälern.
+- `prev`-Tile wird übersprungen, um Plateau-Bounce (A->B->A auf Höhe 0) zu vermeiden; `maxSteps` bleibt als harter Deckel.
+- Quellenwahl ist rein höhenbasiert; der seed-Parameter von generateRivers ist bewusst ungenutzt (Jitter-Varianten später) und dokumentiert.
+**Offen:** nichts.
+
 ## 2026-03-05 – M1.2 Höhen-Layer + Wasserlinie
 **Gebaut:** `generateTerrain(seed, w, h)`: fBm-Grundhöhe + Domain-Warp (zwei eigene fBm-Felder, organische Küsten) + Rand-Falloff, `elevation: Uint8Array` + `water: Uint8Array`. Parameter komplett in `/src/data/worldgen.ts`. Tests: Reproduzierbarkeit, Seed-Sensitivität, Rand-Ozean-Garantie, Wasseranteil, grösste zusammenhängende Landmasse (Flood-Fill), Höhen/Wasser-Konsistenz, 512x512-Performance < 1 s.
 **Entscheidungen:**
