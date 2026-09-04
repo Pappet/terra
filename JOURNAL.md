@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M1.5 Vorkommen
+**Gebaut:** `generateDeposits`: Bitmaske (Stein/Ton/Kohle/Eisen/Öl), pro Rohstoff eigenes fBm-Feld auf Land-Tiles im Höhenband; Placement per **Perzentil** (oberster `rate`-Anteil der geeigneten Tiles), quantisiert über sortierte Feldwerte. Tests: Reproduzierbarkeit, nur definierte Bits, nur auf Land, Menge pro Rohstoff (0.1–12% des Landes), Klumpigkeit (grösste Komponente ≥ 15%), 512er-Perf.
+**Entscheidungen:**
+- Absolute fBm-Schwellen verworfen: Nicht kalibrierbar über Seeds (Stein @ seed 1: 0 Treffer), weil Value-Noise sich um 0.5 konzentriert. Perzentil macht die Menge zur Designgrösse; die räumliche Glätte liefert weiterhin regionale Klumpen.
+- Fehler entdeckt: erste Höhenbänder lagen (Ton 0.02–0.35) komplett unter der Wasserlinie 0.38. Bänder gelten jetzt innerhalb der Landspanne 0.38–1.0. Öl bleibt Land-basiert (Flachland); Offshore-Öl ist BACKLOG.
+**Offen:** nichts.
+
 ## 2026-03-05 – M1.4 Fruchtbarkeit + Wald
 **Gebaut:** `distanceField` (BFS, Chebyshev, gekappt) und `generateDerived`: Fruchtbarkeit aus regionalem fBm × Höhenstrafe + Fluss-/Küsten-Boosts; Wald aus eigenem Feuchte-fBm + Flussnähe, nur unterhalb der Baumgrenze. Parameter in `/src/data/worldgen.ts`. Tests: Reproduzierbarkeit, Wertebereiche, Wald⊆Land, karge Hochlagen (Perzentil), fruchtbarere Flussnähe, sinnvolle Walddichte.
 **Entscheidungen:**

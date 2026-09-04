@@ -4,24 +4,52 @@
  * Änderungsregeln:
  * - Der Weltzustand ändert sich NUR über Actions in der Warteschlange, die
  *   `update()` zu Beginn des Ticks abarbeitet.
- * - Kein Objektzeiger-Netz: Tile-Daten liegen in einem flachen Uint8Array,
- *   der RNG-Zustand ist ein uint32. Alles im Savegame landsicher abbildbar.
+ * - Kein Objektzeiger-Netz: alle Layer sind flache Uint8Arrays, der RNG-Zustand
+ *   ist ein uint32. Savegame-fähig in einem einzigen JSON (Layer als base64).
+ *
+ * Der Konstruktor erzeugt die Welt prozedural (M1) – gleicher Seed, gleiche Welt.
  */
 import { applyAction, type GameAction } from './actions';
+import { base64ToBytes, bytesToBase64 } from './base64';
 import { Rng } from './rng';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
+import { DEPOSIT_DEFS } from '../data/deposits';
+import { generateDeposits } from '../worldgen/deposits';
+import { generateDerived, type DerivedLayers } from '../worldgen/derived';
+import { generateTerrain } from '../worldgen/terrain';
+import { generateSurface } from '../worldgen/surface';
 
-/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion). */
+/** Alle prozeduralen Layer des WorldState. */
+export interface WorldLayers extends DerivedLayers {
+  readonly elevation: Uint8Array;
+  readonly water: Uint8Array;
+  readonly river: Uint8Array;
+  readonly deposits: Uint8Array;
+}
+
+/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 2). */
 export interface SerializedWorld {
   saveVersion: number;
   seed: number;
   tick: number;
   width: number;
   height: number;
-  tiles: number[];
+  tiles: string;
+  layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
+
+const LAYER_KEYS = [
+  'elevation',
+  'water',
+  'river',
+  'fertility',
+  'forest',
+  'deposits',
+] as const;
+
+const ALL_DEPOSIT_BITS = DEPOSIT_DEFS.reduce((acc, d) => acc | d.bit, 0);
 
 export class World {
   readonly seed: number;
@@ -30,6 +58,7 @@ export class World {
 
   tick = 0;
   tiles: Uint8Array;
+  layers: WorldLayers;
   /** Erhöht sich bei jeder Änderung an `tiles` – Cache-Invalidierung fürs Rendering. */
   tileRev = 0;
 
@@ -40,8 +69,13 @@ export class World {
     this.seed = seed >>> 0;
     this.width = width;
     this.height = height;
-    this.tiles = new Uint8Array(width * height);
     this.rng = new Rng(this.seed);
+
+    const terrain = generateTerrain(this.seed, width, height);
+    const derived = generateDerived(this.seed, terrain);
+    const deposits = generateDeposits(this.seed, terrain);
+    this.tiles = generateSurface(terrain, derived);
+    this.layers = { ...terrain, ...derived, deposits };
   }
 
   /** Action einreihen; sie greift zu Beginn des nächsten update(). */
@@ -58,7 +92,7 @@ export class World {
       this.tileRev++;
       this.queue = [];
     }
-    // Ab M1 laufen hier die eigentlichen Simulationssysteme.
+    // Ab M2 laufen hier die eigentlichen Simulationssysteme.
     this.tick++;
   }
 
@@ -67,13 +101,18 @@ export class World {
   }
 
   serialize(): SerializedWorld {
+    const layers = {} as Record<keyof WorldLayers, string>;
+    for (const key of LAYER_KEYS) {
+      layers[key] = bytesToBase64(this.layers[key]);
+    }
     return {
       saveVersion: SIM_CONFIG.saveVersion,
       seed: this.seed,
       tick: this.tick,
       width: this.width,
       height: this.height,
-      tiles: Array.from(this.tiles),
+      tiles: bytesToBase64(this.tiles),
+      layers,
       rngState: this.rng.stateU32,
     };
   }
@@ -104,32 +143,37 @@ export class World {
     if (width === 0 || height === 0) {
       throw new Error(`Savegame: ungültige Kartengrösse ${width}x${height}`);
     }
-    if (!Array.isArray(d.tiles) || d.tiles.length !== width * height) {
-      const len = Array.isArray(d.tiles) ? d.tiles.length : 'kein Array';
-      throw new Error(`Savegame: tiles hat Länge ${String(len)}, erwartet ${width * height}`);
-    }
-    const tiles = new Uint8Array(width * height);
-    for (let i = 0; i < tiles.length; i++) {
-      const v = d.tiles[i];
-      if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v >= TILE_TYPES.length) {
-        throw new Error(`Savegame: ungültiger Tile-Wert an Index ${i}: ${String(v)}`);
-      }
-      tiles[i] = v;
-    }
+    const size = width * height;
 
     const world = new World(seed, width, height);
+    world.tiles = decodeLayer(d.tiles, 'tiles', size, 0, TILE_TYPES.length - 1);
+
+    if (typeof d.layers !== 'object' || d.layers === null) {
+      throw new Error('Savegame: layers fehlt');
+    }
+    const rawLayers = d.layers as Record<string, unknown>;
+    const layers = {} as { -readonly [K in keyof WorldLayers]: Uint8Array };
+    for (const key of LAYER_KEYS) {
+      layers[key] = decodeLayer(rawLayers[key], `layers.${key}`, size, 0, 255);
+    }
+    for (let i = 0; i < size; i++) {
+      if ((layers.water[i] ?? 0) > 1) throw new Error(`Savegame: layers.water[${i}] ist nicht 0/1`);
+      if ((layers.river[i] ?? 0) > 1) throw new Error(`Savegame: layers.river[${i}] ist nicht 0/1`);
+      if ((layers.forest[i] ?? 0) > 1) throw new Error(`Savegame: layers.forest[${i}] ist nicht 0/1`);
+      if (((layers.deposits[i] ?? 0) & ~ALL_DEPOSIT_BITS) !== 0) {
+        throw new Error(`Savegame: layers.deposits[${i}] enthält unbekannte Bits`);
+      }
+    }
+    world.layers = layers;
     world.tick = tick;
-    world.tiles = tiles;
     world.rng = Rng.fromState(asUint32(d.rngState, 'rngState'));
     return world;
   }
 }
 
-/**
- * Tiefe Gleichheit zweier Welten (Tests, Savegame-Verifikation).
- * Vergleicht nur Sim-Zustand; `tileRev` ist Renderer-Bookkeeping und
- * wird bewusst nicht serialisiert, daher nicht verglichen.
- */
+/** Tiefe Gleichheit zweier Welten (Tests, Savegame-Verifikation).
+ *  Vergleicht nur Sim-Zustand; `tileRev` ist Renderer-Bookkeeping und wird
+ *  bewusst nicht serialisiert, daher nicht verglichen. */
 export function equalWorlds(a: World, b: World): boolean {
   if (
     a.seed !== b.seed || a.width !== b.width || a.height !== b.height ||
@@ -137,11 +181,40 @@ export function equalWorlds(a: World, b: World): boolean {
   ) {
     return false;
   }
-  if (a.tiles.length !== b.tiles.length) return false;
-  for (let i = 0; i < a.tiles.length; i++) {
-    if (a.tiles[i] !== b.tiles[i]) return false;
+  const arrays: Array<[Uint8Array, Uint8Array]> = [
+    [a.tiles, b.tiles],
+    [a.layers.elevation, b.layers.elevation],
+    [a.layers.water, b.layers.water],
+    [a.layers.river, b.layers.river],
+    [a.layers.fertility, b.layers.fertility],
+    [a.layers.forest, b.layers.forest],
+    [a.layers.deposits, b.layers.deposits],
+  ];
+  for (const [x, y] of arrays) {
+    if (x.length !== y.length) return false;
+    for (let i = 0; i < x.length; i++) {
+      if (x[i] !== y[i]) return false;
+    }
   }
   return true;
+}
+
+function decodeLayer(value: unknown, name: string, size: number, min: number, max: number): Uint8Array {
+  if (typeof value !== 'string') {
+    throw new Error(`Savegame: Feld "${name}" fehlt oder ist kein base64-String`);
+  }
+  const bytes = base64ToBytes(value);
+  if (bytes.length !== size) {
+    throw new Error(`Savegame: "${name}" hat ${bytes.length} Bytes, erwartet ${size}`);
+  }
+  if (min === 0 && max === 255) return bytes;
+  for (let i = 0; i < bytes.length; i++) {
+    const v = bytes[i] ?? 0;
+    if (v < min || v > max) {
+      throw new Error(`Savegame: "${name}"[${i}] = ${v} ausserhalb [${min}, ${max}]`);
+    }
+  }
+  return bytes;
 }
 
 function asUint32(value: unknown, field: string): number {

@@ -3,8 +3,8 @@
  * eigene Datendateien (z.B. tiles.ts, ab M1 Gebäude/Rezepte).
  */
 export const SIM_CONFIG = {
-  /** Savegame-Formatversion; wird beim Laden geprüft. */
-  saveVersion: 1,
+  /** Savegame-Formatversion; wird beim Laden geprüft. v2: Layer als base64. */
+  saveVersion: 2,
 
   /** Kartengrösse. M0: kleines Grid; M1 erhöht auf 512x512. */
   map: { width: 128, height: 128 },

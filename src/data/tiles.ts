@@ -16,4 +16,5 @@ export const TILE_TYPES: readonly TileType[] = [
   { id: 2, name: 'Erde', color: '#6b5335' },
   { id: 3, name: 'Wasser', color: '#28527a' },
   { id: 4, name: 'Fels', color: '#7a7a72' },
+  { id: 5, name: 'Wald', color: '#25401f' },
 ];

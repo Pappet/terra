@@ -40,6 +40,13 @@ export const WORLDGEN = {
     coastRadius: 2,
     coastBoost: 0.15,
   },
+  /** Oberflächen-Mapping: welche Tile-IDs sichtbar werden. */
+  surface: {
+    /** Land ab diesem Höhenanteil wird Fels. */
+    rockThreshold: 0.78,
+    /** Land ab dieser Fruchtbarkeit wird Gras, sonst Ödland. */
+    grassThreshold: 0.35,
+  },
   forest: {
     octaves: 4,
     /** Feuchte-Feld, Wellenlänge in Tiles. */

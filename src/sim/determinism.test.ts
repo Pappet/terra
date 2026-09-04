@@ -68,10 +68,12 @@ function runLooped(script: ScriptEntry[]): World {
   return world;
 }
 
+/** Zählt Tiles, die gegenüber der frisch generierten Welt abweichen (bemalt). */
 function countPainted(world: World): number {
+  const fresh = new World(SEED, 32, 32);
   let painted = 0;
   for (let i = 0; i < world.tiles.length; i++) {
-    if (world.tiles[i] !== 0) painted++;
+    if (world.tiles[i] !== fresh.tiles[i]) painted++;
   }
   return painted;
 }
