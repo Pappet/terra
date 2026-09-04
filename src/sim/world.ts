@@ -17,7 +17,8 @@ import { PathFinder } from './pathfinding';
 import { Population } from './population';
 import { Rng } from './rng';
 import { runGrowthTick } from './growth';
-import { runDemographicsTick } from './demographics';
+import { runDemographicsTick, runMigration } from './demographics';
+import { assignWorkers, type EmploymentState } from './employment';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
@@ -103,7 +104,11 @@ export class World {
   tileRev = 0;
 
   private rng: Rng;
-  private pathfinder = new PathFinder();
+  /** A*-Cache-Instanz (öffentlich: employment liest Reisezeiten). */
+  readonly pathfinder = new PathFinder();
+  /** Aktuelle Pendler-/Beschäftigungs-Zuweisung (abgeleitet, nicht serialisiert). */
+  commute: EmploymentState | null = null;
+  private commuteDirty = true;
   private queue: GameAction[] = [];
 
   constructor(seed: number, width: number, height: number) {
@@ -153,6 +158,7 @@ export class World {
     this.buildingIndex[idx] = id;
     this.removeFromZoneTiles(cityId, idx);
     this.tileRev++;
+    this.commuteDirty = true;
     return id;
   }
 
@@ -194,6 +200,7 @@ export class World {
       this.addToZoneTiles(zoneCityId, ry * this.width + rx);
     }
     this.tileRev++;
+    this.commuteDirty = true;
   }
 
   /** Action einreihen; sie greift zu Beginn des nächsten update(). */
@@ -211,12 +218,16 @@ export class World {
       for (const action of this.queue) {
         applyAction(this, action);
         if (action.kind === 'buildRoad' || action.kind === 'demolishRoad') roadsChanged = true;
+        if (action.kind === 'foundCity') this.commuteDirty = true;
         if (action.kind === 'requestRoute' || action.kind === 'clearRoute') routeDirty = true;
       }
       this.tileRev++;
       this.queue = [];
     }
-    if (roadsChanged) this.recomputeUpkeep(); // wirkt ab dem nächsten Tick
+    if (roadsChanged) {
+      this.recomputeUpkeep(); // wirkt ab dem nächsten Tick
+      this.commuteDirty = true;
+    }
     if (routeDirty && this.routeRequest !== null) {
       const { from, to } = this.routeRequest;
       this.routeRequest = null;
@@ -231,14 +242,32 @@ export class World {
       }
     }
     runGrowthTick(this, this.rng);
-    runDemographicsTick(this, this.rng, this.tick);
+    if (runDemographicsTick(this, this.rng, this.tick)) {
+      runMigration(this, this.rng);
+      this.commuteDirty = true;
+    }
     this.syncPopulation();
+    // Arbeitsplatz-Zuweisung bei jeder relevanten Änderung (Städte, Gebäude,
+    // Bevölkerung, Strassen) – sonst bleibt die letzte Zuweisung stehen.
+    if (this.commuteDirty) {
+      this.commute = assignWorkers(this);
+      this.commuteDirty = false;
+    }
     this.tick++;
   }
 
   /** Hält Bevölkerungs-Vektoren mit der Stadtanzahl synchron (Gründung/Laden). */
   private syncPopulation(): void {
     this.population.ensureCity(this.cities.count);
+  }
+
+  /**
+   * Zuzug: Einwohner als Kohorte ansiedeln (M4.5 Migration nutzt das über
+   * Actions-Werte im Tick). Invalidiert die Arbeitsplatz-Zuweisung.
+   */
+  settleResidents(cityId: number, cohort: number, count: number): void {
+    this.population.add(cityId, cohort, count);
+    this.commuteDirty = true;
   }
 
   /** Summiert Unterhaltskosten über alle Strassentiles (nur bei Änderungen). */
@@ -395,6 +424,7 @@ export class World {
     world.tick = tick;
     world.rebuildCityZoneTiles();
     world.recomputeUpkeep();
+    world.commute = assignWorkers(world);
     world.rng = Rng.fromState(asUint32(d.rngState, 'rngState'));
     return world;
   }
@@ -435,6 +465,11 @@ export function equalWorlds(a: World, b: World): boolean {
     for (let i = 0; i < x.length; i++) {
       if (x[i] !== y[i]) return false;
     }
+  }
+  // Pendler-Zuweisung (deterministisch abgeleitet).
+  if ((a.commute === null) !== (b.commute === null)) return false;
+  if (a.commute !== null && b.commute !== null) {
+    if (JSON.stringify(a.commute) !== JSON.stringify(b.commute)) return false;
   }
   // Städte & Gebäude (SoA) + Zonen-Besitz + Gebäude-Index + Bevölkerung.
   if (

@@ -81,8 +81,11 @@ describe('World-Integration', () => {
     w.update();
     expect(w.population.total(1)).toBe(0);
 
-    w.population.add(1, cohortIndex(1, 0, 0), 12);
-    w.population.add(1, cohortIndex(3, 2, 2), 4);
+    w.settleResidents(1, cohortIndex(1, 0, 0), 12);
+    w.settleResidents(1, cohortIndex(3, 2, 2), 4);
+    // Zuzug läuft über die World-API und setzt die Zuweisung dirty; ein Tick
+    // bringt sie auf den neuen Stand.
+    w.update();
     const restored = World.fromJson(w.toJson());
     expect(equalWorlds(w, restored)).toBe(true);
     expect(restored.population.total(1)).toBe(16);

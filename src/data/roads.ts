@@ -24,6 +24,8 @@ export const ROAD_BY_ID = new Map<number, RoadType>(ROAD_TYPES.map((r) => [r.id,
 /** Fortbewegung abseits von Strassen (Land), Wasser ist unpassierbar. */
 export const MOVEMENT = {
   offroadSpeedTilesPerTick: 0.25,
+  /** Pendler-Korridorkapazität abseits von Strassen (Trampelpfad). */
+  offroadCapacity: 2,
 } as const;
 
 /**

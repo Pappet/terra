@@ -1,13 +1,11 @@
 /**
- * Bevölkerungsdynamik (M4.2): Alterung (Kohorten rücken alle
- * AGE_TICK_INTERVAL Ticks weiter), Geburten (kapazitätsbegrenzt durch
- * Wohnhäuser) und Sterbefälle je Altersgruppe. Deterministisch über RNG.
- *
- * Bildung wandert mit: Kinder werden mit Wahrscheinlichkeit
- * childEducationChance Grundgebildete; junge Erwachsene erhalten mit
- * higherEducationChance Hochschulbildung beim Wechsel in Gruppe 2.
+ * Bevölkerungsdynamik (M4.2) und Migration (M4.5). Alterung (Kohorten rücken
+ * alle AGE_TICK_INTERVAL Ticks weiter), Geburten (kapazitätsbegrenzt durch
+ * Wohnhäuser), Sterbefälle je Altersgruppe; Zufriedenheit aus Arbeits-
+ * versorgung, Pendelzeit und Wohnraum steuert Zuzug und Wegzug.
+ * Deterministisch über den Welt-RNG.
  */
-import { DEMOGRAPHICS } from '../data/demographics';
+import { DEMOGRAPHICS, MIGRATION } from '../data/demographics';
 import { GROWTH } from '../data/cities';
 import {
   AGE_BRACKETS,
@@ -16,6 +14,7 @@ import {
   INCOME_LEVELS,
   cohortIndex,
 } from './population';
+import { averageCommuteTime } from './employment';
 import type { Rng } from './rng';
 import type { World } from './world';
 
@@ -40,9 +39,17 @@ function sumAdults(vec: Float64Array): number {
   return sum;
 }
 
-/** Ein Demografie-Tick (von World.update aufgerufen; wirkt nur im Intervall). */
-export function runDemographicsTick(world: World, rng: Rng, tick: number): void {
-  if (tick % AGE_TICK_INTERVAL !== 0) return;
+/** Wohnkapazität einer Stadt (Häuser × Bewohner pro Haus). */
+export function housingCapacity(world: World, cityId: number): number {
+  return housesOf(world, cityId) * GROWTH.residentsPerHouse;
+}
+
+/**
+ * Demografie-Tick (M4.2); wirkt nur alle AGE_TICK_INTERVAL Ticks und liefert
+ * dann true (u.a. Invalidierung der Arbeitsplatz-Zuweisung).
+ */
+export function runDemographicsTick(world: World, rng: Rng, tick: number): boolean {
+  if (tick % AGE_TICK_INTERVAL !== 0) return false;
 
   for (let cityId = 1; cityId <= world.cities.count; cityId++) {
     const vec = world.population.city(cityId);
@@ -77,7 +84,7 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): void 
 
     // 2) Geburten: proportional zu Erwachsenen, begrenzt durch Wohnkapazität
     const adultTotal = sumAdults(next);
-    const capacity = housesOf(world, cityId) * GROWTH.residentsPerHouse;
+    const capacity = housingCapacity(world, cityId);
     let total = 0;
     for (let i = 0; i < next.length; i++) total += next[i] ?? 0;
     const births = Math.min(adultTotal * DEMOGRAPHICS.birthRatePerInterval, Math.max(0, capacity - total));
@@ -97,9 +104,73 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): void 
     }
     world.population.perCity[cityId - 1] = next;
   }
+
+  // 3) Migration (M4.5) läuft im selben Intervall
+  runMigration(world, rng);
+  return true;
 }
 
-/** Hilfsfunktion für Tests/UI: Wohnkapazität einer Stadt. */
-export function housingCapacity(world: World, cityId: number): number {
-  return housesOf(world, cityId) * GROWTH.residentsPerHouse;
+/**
+ * Zufriedenheit einer Stadt (0..1) aus Arbeitsversorgung, Pendelzeit und
+ * Wohnraum (M4.5). Liest die aktuelle Pendler-Zuweisung.
+ */
+export function computeSatisfaction(world: World, cityId: number): number {
+  const residents = world.population.total(cityId);
+  const vec = world.population.city(cityId);
+  let adults = 0;
+  if (vec !== null) {
+    for (let e = 0; e < EDUCATION_LEVELS; e++) {
+      for (let inc = 0; inc < INCOME_LEVELS; inc++) {
+        adults += (vec[cohortIndex(1, e, inc)] ?? 0) + (vec[cohortIndex(2, e, inc)] ?? 0);
+      }
+    }
+  }
+  const employed = world.commute?.employed[cityId - 1] ?? 0;
+  // Beschäftigungsanteil der Erwachsenen; ohne Erwachsene neutral 1.
+  const employmentRatio = adults <= 0 ? 1 : Math.min(1, employed / adults);
+  const commuteScore = 1 - Math.min(1, averageCommuteTime(world, cityId) / MIGRATION.commuteToleranceTicks);
+  const capacity = housingCapacity(world, cityId);
+  const housingScore = residents <= 0 ? 1 : Math.min(1, capacity / Math.max(1, residents));
+
+  return Math.min(
+    1,
+    Math.max(
+      0,
+      MIGRATION.weightEmployment * employmentRatio +
+        MIGRATION.weightCommute * commuteScore +
+        MIGRATION.weightHousing * housingScore,
+    ),
+  );
+}
+
+/**
+ * Migration (M4.5): Zuzug bei Zufriedenheit über der Schwelle (in freie
+ * Wohnkapazität), Wegzug darunter. Deterministisch über den Welt-RNG.
+ */
+export function runMigration(world: World, rng: Rng): void {
+  for (let cityId = 1; cityId <= world.cities.count; cityId++) {
+    const satisfaction = computeSatisfaction(world, cityId);
+    const residents = world.population.total(cityId);
+    const capacity = housingCapacity(world, cityId);
+
+    if (satisfaction >= MIGRATION.immigrationThreshold) {
+      const free = Math.max(0, capacity - residents);
+      const newcomers =
+        free * MIGRATION.immigrationRate * ((satisfaction - MIGRATION.immigrationThreshold) / (1 - MIGRATION.immigrationThreshold));
+      if (newcomers > 0) {
+        const edu = rng.chance(MIGRATION.immigrantEducationChance) ? 1 : 0;
+        world.settleResidents(cityId, cohortIndex(1, edu, 0), newcomers);
+      }
+    } else if (satisfaction < MIGRATION.departureThreshold && residents > 0) {
+      const leavers =
+        residents * MIGRATION.departureRate * ((MIGRATION.departureThreshold - satisfaction) / MIGRATION.departureThreshold);
+      const vec = world.population.city(cityId);
+      if (vec !== null) {
+        for (let i = 0; i < vec.length; i++) {
+          const count = vec[i] ?? 0;
+          if (count > 0) world.settleResidents(cityId, i, -count * (leavers / residents));
+        }
+      }
+    }
+  }
 }

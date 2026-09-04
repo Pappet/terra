@@ -130,6 +130,7 @@ describe('M3.2 Zonen', () => {
     w.enqueue({ kind: 'paintZone', x: spot.x, y: spot.y, zone: ZONE_TYPES.commercial });
     w.update();
     w.addBuildingAt(1, spot.x, spot.y, ZONE_TYPES.commercial);
+    w.update(); // abgeleitete Zuweisung (commute) nachziehen
     const restored = World.fromJson(w.toJson());
     expect(equalWorlds(w, restored)).toBe(true);
     expect(restored.buildings.count).toBe(1);

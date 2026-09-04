@@ -1,5 +1,27 @@
 # JOURNAL
 
+## 2026-03-05 – M4.4 Pendler-Korridorkapazität (Stau)
+**Gebaut:** `routeCapacity` (kleinste Korridorkapazität entlang des A*-Pfades; Strassentyp-Kapazität, offroad = Trampelpfad 2) deckelt den Pendlerfluss pro Städtepaar: `take = min(Jobs, Erwerbstätige, Korridor)`. Überlauf geht auf die nächstbessere Route oder bleibt arbeitslos. `MOVEMENT.offroadCapacity = 2` in data. Tests: Pfad deckelt bei 10, Chaussee hebt auf joblimitiert 80 (Reaktivität auf Strassenausbau), Trampelpfad trägt nur 2, Regressions-Tests auf Kapazität umgestellt (lineWorld mit Strassentyp-Parameter).
+**Entscheidungen:**
+- Harte Korridor-Deckelung statt weicher Zeitverlängerung: einfach, deterministisch, direkt am DoD ("Stau/Kapazität dämpft die Zuweisung"). Weiche Stau-Faktoren auf Reisezeiten kommen mit M5/M8, wenn Preise/Attraktivität Reisezeiten gewichten.
+- Korridorkapazität = min über alle Pfad-Tiles: der Engpass bestimmt die Route (klassische Fluss-Semantik).
+**Offen:** nichts.
+
+## 2026-03-05 – M4.3 Arbeitsplätze + Zuweisung über A*
+**Gebaut:** `employment.ts`: `jobsOf` (C/I-Gebäude × jobsPerBuilding), `assignWorkers` (gierige Zuweisung nach Städtepaar-Reisezeit, eigene Stadt zuerst, Pendeln über Stadtgrenzen erlaubt; Kandidaten sortiert nach (Zeit, ID); nicht Erreichbare bleiben arbeitslos). `World.commute` (flows/employed/unemployed/openJobs) als deterministisch abgeleiteter Zustand (in equalWorlds verglichen, nicht serialisiert – beim Laden frisch gerechnet). `commuteDirty`-Invalidierung bei Stadtgründung, Gebäudebau/-verfall, Demografie-Intervall und Strassenwechsel. Reisezeiten: Zentrum→Zentrum über den A*-Cache, aggregiert pro Städtepaar.
+**Entscheidungen:**
+- Aggregierte Städtepaar-Flüsse statt Einzelpersonen-Routing (DoD verlangt Pendleraufkommen im Overlay, nicht Agenten); Einzel-Home→Job-Granularität wäre O(Worker×Jobs) A* – erst bei Bedarf (BACKLOG).
+- `World.settleResidents` als echte API für Zuzug (M4.5) statt direkter Populations-Manipulation: hält das Dirty-Tracking zentral.
+- Bug gefunden durch Roundtrip-Tests: Demografie-Intervall und Gebäudewechsel setzten commuteDirty nicht → stale Zuweisung vs. frisch geladene Welt. Zusätzlich Save/Replay-Test über das Demografie-Intervall nachgetragen (Berater-Frage: RNG wird nur in Intervall-Ticks konsumiert, Zustand reist im Savegame mit → bewiesen identisch).
+- Testtechnik: handgebaute 1-Zeilen-Welten (lineWorld) für Assignment-Fälle mit voller Kontrolle (verbunden/getrennt/Konkurrenz), statt auf zufällige Kartenlayouts zu hoffen.
+**Offen:** nichts.
+
+## 2026-03-05 – M4.2 Nachtrag: Save/Replay-Beweis
+**Gebaut:** Test "Save/Replay mitten im Lauf": Live-Lauf wird bei Tick 151 gespeichert, beide Läufe führen über das Demografie-Intervall (Tick 200) – identical worlds inklusive RNG-Verbrauch durch Bildungs-/Geburten-Würfe. Beantwortet die Berater-Frage: `runDemographicsTick` konsumiert den Welt-RNG nur in Intervall-Ticks, und da der RNG-Zustand im Savegame mitreist, ist die Fortsetzung exakt.
+**Entscheidungen:**
+- BACKLOG-Eintrag: Einkommens-Mobilität bei Geburten (derzeit nur Gruppe 0/1 nach elterlicher Bildung; "hoch" entsteht mit Job-Zuweisung M4.3 bzw. dynamisch ab M4.5/M7).
+**Offen:** nichts.
+
 ## 2026-03-05 – M4.2 Bevölkerungsdynamik
 **Gebaut:** `runDemographicsTick` (wirkt alle AGE_TICK_INTERVAL=200 Ticks): Alterung mit Bildungswanderung (Kinder→Grundbildung p=0.9, junge Erwachsene→Hochschule p=0.15), Sterbefälle je Altersgruppe, Geburten proportional zu Erwachsenen und **kapazitätsbegrenzt** durch Wohnhäuser (Häuser × residentsPerHouse). `housingCapacity()` für Tests/UI. Tests: Weiterziehen der Kohorten, Kapazitätsdeckel, Aussterben ohne Häuser, Ausdünnen der ältesten Gruppe, Determinismus. 155 Tests grün, Build grün.
 **Entscheidungen:**

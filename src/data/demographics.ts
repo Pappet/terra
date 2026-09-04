@@ -13,3 +13,28 @@ export const DEMOGRAPHICS = {
   higherEducationChance: 0.15,
   /** Ohne Wohnkapazität wandern Geburtenstatistisch ab (keine Obdachlosenzelte). */
 } as const;
+
+/**
+ * Migration (M4.5): Zuzug bei hoher Zufriedenheit (in freie Wohnkapazität),
+ * Wegzug bei niedriger. Zufriedenheit gewichtet Jobs, Pendelzeit, Wohnraum.
+ */
+export const MIGRATION = {
+  /** Gewichtung Arbeitsplatzversorgung. */
+  weightEmployment: 0.45,
+  /** Gewichtung Pendelzeit. */
+  weightCommute: 0.25,
+  /** Gewichtung Wohnraum. */
+  weightHousing: 0.3,
+  /** Pendelzeit in Ticks, ab der das Pendeln als belastend gilt. */
+  commuteToleranceTicks: 60,
+  /** Zuzug setzt Zufriedenheit über dieser Schwelle voraus. */
+  immigrationThreshold: 0.6,
+  /** Anteil der freien Kapazität, der pro Intervall bei vollem Zuzug wandert. */
+  immigrationRate: 0.5,
+  /** Wegzug setzt Zufriedenheit unter dieser Schwelle. */
+  departureThreshold: 0.35,
+  /** Anteil der Einwohner, der pro Intervall bei voller Unzufriedenheit geht. */
+  departureRate: 0.15,
+  /** Chance, dass Zuzug Grundbildung mitbringt (sonst keine). */
+  immigrantEducationChance: 0.7,
+} as const;
