@@ -14,10 +14,11 @@
 **Offen:** nichts.
 
 ## 2026-03-05 – M0.3 Weltzustand, Actions, Savegame
-**Gebaut:** `WorldState` als Struct-of-Arrays (`tiles: Uint8Array`), `pendingActions` mit Tick-Scheduling (Actions greifen im Sim-Tick, nie direkt aus der UI heraus – das ist die Determinismus-Grenze), JSON-Serialisierung mit Versionsfeld.
+**Gebaut:** `World` als Struct-of-Arrays (`tiles: Uint8Array`), FIFO-Action-Warteschlange (Actions greifen zu Beginn des nächsten Sim-Ticks – Determinismus-Grenze, siehe DECISIONS D003), JSON-Serialisierung mit Versionsfeld und harten Validierungen beim Laden, `tileRev` als Cache-Invalidierungszähler. Minimales lauffähiges UI-Shell (index.html + main.ts): Boot mit URL-Seed, statisches Grid-Rendering, Klick-Paint über die Action-Pipeline – damit ist der Build ab sofort lauffähig.
 **Entscheidungen:**
-- TypedArrays werden im Savegame als normale Zahl-Arrays serialisiert (JSON, menschenlesbar). Bei 512x512 sind das ~2 MB; ein binäres/base64-Format steht im BACKLOG und wird erst bei Bedarf (M1) gemacht.
-- Erste echte Action ist `paintTile` – klein, aber real: Sie macht die Determinismus-Tests von Anfang an mit nichtleerer Aktionsliste möglich und bleibt als Debug-Editor nützlich.
+- TypedArrays werden im Savegame als normale Zahl-Arrays serialisiert (JSON, menschenlesbar). Bei 512x512 sind das ~2 MB; binäres/base64-Format steht im BACKLOG.
+- `tileRev` ist Renderer-Bookkeeping: wird nicht serialisiert und nicht in `equalWorlds` verglichen (erwies sich im Roundtrip-Test als Designfrage).
+- TS-Lehre: Exhaustiveness-Checks (`const x: never = action`) nach `switch` funktionieren erst ab dem zweiten Union-Member; bei Ein-Member-Unionen subtrahiert TS nicht bis `never`. Bis dahin fängt ein Runtime-Throw in `default` unbekannte Kinds ab.
 **Offen:** nichts.
 
 ## 2026-03-05 – M0.4 Fixed-Tick-Loop

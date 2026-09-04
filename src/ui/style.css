@@ -1,0 +1,28 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0d10;
+  color: #cfd6dd;
+  font-family: monospace;
+}
+
+#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#hud {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  background: rgba(10, 12, 16, 0.85);
+  border: 1px solid #2a313a;
+  padding: 6px 10px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: pre;
+}

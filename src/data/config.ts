@@ -1,0 +1,24 @@
+/**
+ * Engine-Konfiguration. Keine Balance-Werte hier – Spielbalance gehört in
+ * eigene Datendateien (z.B. tiles.ts, ab M1 Gebäude/Rezepte).
+ */
+export const SIM_CONFIG = {
+  /** Savegame-Formatversion; wird beim Laden geprüft. */
+  saveVersion: 1,
+
+  /** Kartengrösse. M0: kleines Grid; M1 erhöht auf 512x512. */
+  map: { width: 128, height: 128 },
+
+  /** Seed, wenn die URL keinen angibt. */
+  defaultSeed: 1337,
+
+  /** Sim-Ticks pro Sekunde bei Geschwindigkeit 1x. */
+  ticksPerSecond: 20,
+
+  /** Hartes Limit an Ticks pro gerendertem Frame (Schutz vor Todesspirale). */
+  maxTicksPerFrame: 400,
+} as const;
+
+/** Wählbare Simulationsgeschwindigkeit: Pause, 1x, 3x, 10x. */
+export const SPEED_STEPS = [0, 1, 3, 10] as const;
+export type SimSpeed = (typeof SPEED_STEPS)[number];

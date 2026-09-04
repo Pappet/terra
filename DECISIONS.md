@@ -14,10 +14,12 @@ Bei 512x512 Karten (~262k Tiles) wird das mehrere MB gross; dann Umstieg auf bas
 Format (BACKLOG). Grund für den Aufschub: YAGNI, Roundtrip-Korrektheit ist formatunabhängig
 getestet, der Wechsel kostet eine Funktion.
 
-## D003 – Action-Pipeline als Determinismus-Grenze (M0)
-Änderungen am Weltzustand laufen ausschliesslich über `pendingActions`, die der Sim-Tick
-auswertet – nie direkt aus UI/Renderer. Damit ist "gleicher Seed + gleiche Aktionsliste =
-identischer Zustand" strukturell garantiert, nicht nur zufällig erfüllt.
+## D003 – Action-Warteschlange als Determinismus-Grenze (M0)
+Änderungen am Weltzustand laufen ausschliesslich über eine FIFO-Action-Warteschlange, die
+`World.update()` zu Beginn des Ticks abarbeitet – nie direkt aus UI/Renderer. Damit ist
+"gleicher Seed + gleiche Aktionsliste = identischer Zustand" strukturell garantiert, nicht
+nur zufällig erfüllt. Out-of-Bounds-Actions werden still ignoriert (UI-Komfort), ungültige
+Daten werfen (Programmfehler).
 
 ## D004 – SimLoop mit injizierbarer Uhr (M0)
 Die Loop-Klasse bekommt Zeit über eine Funktion, nicht global. Browser injiziert
