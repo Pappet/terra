@@ -3,7 +3,9 @@
  * Sim-Zugriff läuft ausschliesslich über Actions; das HUD liest nur Zustand.
  */
 import { SIM_CONFIG, VIEW_CONFIG } from '../data/config';
+import { OVERLAYS } from '../data/overlays';
 import { Camera } from '../render/camera';
+import { Minimap } from '../render/minimap';
 import { Renderer } from '../render/renderer';
 import { SimLoop } from '../sim/loop';
 import { World } from '../sim/world';
@@ -28,8 +30,41 @@ let currentWorld: World = initialWorld;
 const loop = new SimLoop(initialWorld, { now: () => performance.now() });
 const camera = new Camera();
 const renderer = new Renderer(canvas);
+const minimap = new Minimap(document.body);
+minimap.setWorld(initialWorld);
 
 let activePaintTile = 1;
+let activeOverlay = 'surface';
+
+// Minimap: Klick/Drag zentriert die Kamera
+let minimapDragging = false;
+function jumpTo(ev: MouseEvent): void {
+  const pos = minimap.screenToWorld(ev.clientX, ev.clientY);
+  camera.x = pos.x;
+  camera.y = pos.y;
+  camera.clampToMap(currentWorld.width, currentWorld.height);
+}
+minimap.canvas.addEventListener('mousedown', (ev) => {
+  minimapDragging = true;
+  jumpTo(ev);
+});
+window.addEventListener('mousemove', (ev) => {
+  if (minimapDragging) jumpTo(ev);
+});
+window.addEventListener('mouseup', () => {
+  minimapDragging = false;
+});
+
+function cycleOverlay(): void {
+  const idx = OVERLAYS.findIndex((o) => o.id === activeOverlay);
+  const next = OVERLAYS[(idx + 1) % OVERLAYS.length] as (typeof OVERLAYS)[number];
+  applyOverlay(next.id);
+}
+
+function applyOverlay(overlayId: string): void {
+  activeOverlay = overlayId;
+  hud.setActiveOverlay(overlayId);
+}
 
 function speedLabel(): string {
   return loop.speed === 0 ? 'Pause' : `${loop.speed}x`;
@@ -43,6 +78,7 @@ function applySpeed(speed: number): void {
 function applyLoadedWorld(next: World): void {
   loop.setWorld(next);
   renderer.setWorld(next);
+  minimap.setWorld(next);
   currentWorld = next;
   camera.clampToMap(next.width, next.height);
   hud.flash(`Welt geladen: Seed ${next.seed}, Tick ${next.tick}`);
@@ -50,6 +86,7 @@ function applyLoadedWorld(next: World): void {
 
 const hud = new Hud(hudContainer, {
   onSpeed: applySpeed,
+  onOverlay: applyOverlay,
   onPaintTile: (tileId) => {
     activePaintTile = tileId;
     hud.setActivePaintTile(tileId);
@@ -91,6 +128,10 @@ const input = attachInput(canvas, {
   setSpeed: applySpeed,
 });
 
+window.addEventListener('keydown', (ev) => {
+  if (ev.key === 'o' || ev.key === 'O') cycleOverlay();
+});
+
 // ---------- Frame ----------
 
 let lastFrameMs = performance.now();
@@ -111,7 +152,8 @@ function frame(nowMs: number): void {
     camera.panByTiles(dx * dist, dy * dist);
   }
   camera.clampToMap(currentWorld.width, currentWorld.height);
-  renderer.draw(camera);
+  renderer.draw(camera, activeOverlay);
+  minimap.draw(camera, activeOverlay);
 
   fpsCount++;
   if (nowMs - fpsWindowStart >= 500) {

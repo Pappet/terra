@@ -38,6 +38,24 @@ body {
   gap: 4px;
 }
 
+#hud .top-center {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.minimap {
+  position: fixed;
+  top: 48px;
+  right: 8px;
+  border: 1px solid #2a313a;
+  background: #0b0d10;
+  cursor: crosshair;
+}
+
 #hud .bottom-left {
   bottom: 8px;
   left: 8px;

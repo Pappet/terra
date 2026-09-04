@@ -2,11 +2,13 @@
  * HUD: Statuszeile, Geschwindigkeits-Buttons, Tile-Palette, Savegame-Buttons.
  * Reines DOM mit Callbacks nach unten – keine Spiellogik, kein Sim-Zugriff.
  */
+import { OVERLAYS } from '../data/overlays';
 import { TILE_TYPES, type TileType } from '../data/tiles';
 
 export interface HudCallbacks {
   onSpeed(speed: number): void;
   onPaintTile(tileId: number): void;
+  onOverlay(overlayId: string): void;
   onSave(): void;
   onLoad(): void;
   onExport(): void;
@@ -26,6 +28,7 @@ export class Hud {
   private readonly flashEl: HTMLDivElement;
   private readonly speedButtons = new Map<number, HTMLButtonElement>();
   private readonly paintButtons = new Map<number, HTMLButtonElement>();
+  private readonly overlayButtons = new Map<string, HTMLButtonElement>();
   private readonly fileInput: HTMLInputElement;
   private flashTimer: number | undefined;
 
@@ -65,6 +68,16 @@ export class Hud {
       paintPanel.append(this.paintButtons.get(tile.id)!);
     }
 
+    // Overlay-Umschalter oben mittig
+    const overlayPanel = document.createElement('div');
+    overlayPanel.className = 'panel top-center';
+    overlayPanel.append(hudLabel('Overlay:'));
+    for (const overlay of OVERLAYS) {
+      const b = button(overlay.name, () => callbacks.onOverlay(overlay.id));
+      this.overlayButtons.set(overlay.id, b);
+      overlayPanel.append(b);
+    }
+
     // Savegame unten rechts
     const savePanel = document.createElement('div');
     savePanel.className = 'panel bottom-right';
@@ -85,9 +98,10 @@ export class Hud {
       this.fileInput,
     );
 
-    container.append(statusPanel, speedPanel, paintPanel, savePanel);
+    container.append(statusPanel, speedPanel, overlayPanel, paintPanel, savePanel);
     this.setActiveSpeed(1);
     this.setActivePaintTile(1);
+    this.setActiveOverlay('surface');
   }
 
   private makePaintButton(tile: TileType, callbacks: HudCallbacks): HTMLButtonElement {
@@ -111,6 +125,12 @@ export class Hud {
   setActivePaintTile(tileId: number): void {
     for (const [id, b] of this.paintButtons) {
       b.classList.toggle('active', id === tileId);
+    }
+  }
+
+  setActiveOverlay(overlayId: string): void {
+    for (const [id, b] of this.overlayButtons) {
+      b.classList.toggle('active', id === overlayId);
     }
   }
 

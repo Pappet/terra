@@ -1,17 +1,17 @@
 /**
- * Canvas2D-Renderer mit Layer-Caching: Die Tile-Ebene wird einmal pro
- * (tileRev, Cache-Aufloesung) in eine Offscreen-Canvas gerendert; pro Frame
- * wird nur geblittet plus billige Overlay-Elemente (Gitter, Kartenrand).
+ * Canvas2D-Renderer mit Layer-Caching: Die Karte wird 1px-pro-Tile als
+ * ImageData gerendert (Overlay-abhängig) und auf eine Cache-Canvas in
+ * Gerätepixel-Auflösung skaliert; pro Frame wird nur geblittet plus billige
+ * Overlays (Gitter, Kartenrand).
  *
- * Cache-Aufloesung ist gekappt (Gerätepixel pro Tile), damit grosse Zoomwerte
- * den Speicher nicht sprengen – flächige Tiles vertragen Nearest-Neighbor-
- * Upscaling ohne sichtbaren Qualitätsverlust. Bei 512x512-Karten wird das
- * durch Chunk-Caching ersetzt (BACKLOG).
+ * Cache-Auflösung ist gekappt (Gerätepixel pro Tile), damit grosse Zoomwerte
+ * den Speicher nicht sprengen. Bei grösseren Karten/Zoom wird das durch
+ * Chunk-Caching ersetzt (BACKLOG).
  */
 import { VIEW_CONFIG } from '../data/config';
-import { TILE_TYPES } from '../data/tiles';
 import type { World } from '../sim/world';
 import { Camera } from './camera';
+import { fillTileColors } from './overlay';
 
 const CACHE_MAX_PX_PER_TILE = 16;
 const CACHE_MIN_PX_PER_TILE = 2;
@@ -19,6 +19,9 @@ const CACHE_MIN_PX_PER_TILE = 2;
 export class Renderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
+  /** 1px pro Tile – die Native-Auflösung der Kartendarstellung. */
+  private readonly mapCanvas: HTMLCanvasElement;
+  private readonly mapCtx: CanvasRenderingContext2D;
   private readonly cache: HTMLCanvasElement;
   private readonly cacheCtx: CanvasRenderingContext2D;
   private world: World | null = null;
@@ -29,6 +32,10 @@ export class Renderer {
     const ctx = canvas.getContext('2d');
     if (ctx === null) throw new Error('Canvas2D-Kontext nicht verfügbar');
     this.ctx = ctx;
+    this.mapCanvas = document.createElement('canvas');
+    const mapCtx = this.mapCanvas.getContext('2d');
+    if (mapCtx === null) throw new Error('Map-Kontext nicht verfügbar');
+    this.mapCtx = mapCtx;
     this.cache = document.createElement('canvas');
     const cacheCtx = this.cache.getContext('2d');
     if (cacheCtx === null) throw new Error('Offscreen-Kontext nicht verfügbar');
@@ -37,10 +44,12 @@ export class Renderer {
 
   setWorld(world: World): void {
     this.world = world;
+    this.mapCanvas.width = world.width;
+    this.mapCanvas.height = world.height;
     this.cacheKey = '';
   }
 
-  draw(camera: Camera): void {
+  draw(camera: Camera, overlayId: string): void {
     const world = this.world;
     if (world === null) return;
 
@@ -61,9 +70,9 @@ export class Renderer {
         Math.max(CACHE_MIN_PX_PER_TILE, camera.zoom * dpr),
       ),
     );
-    const key = `${world.tileRev}|${scale}|${world.width}x${world.height}`;
+    const key = `${overlayId}|${scale}|${world.tileRev}|${world.width}x${world.height}`;
     if (key !== this.cacheKey) {
-      this.rebuildCache(world, scale);
+      this.rebuildCache(world, overlayId, scale);
       this.cacheKey = key;
     }
 
@@ -122,28 +131,18 @@ export class Renderer {
     ctx.restore();
   }
 
-  private rebuildCache(world: World, scale: number): void {
+  private rebuildCache(world: World, overlayId: string, scale: number): void {
+    const imageData = this.mapCtx.createImageData(world.width, world.height);
+    fillTileColors(world, overlayId, imageData.data);
+    this.mapCtx.putImageData(imageData, 0, 0);
+
     const w = world.width * scale;
     const h = world.height * scale;
     if (this.cache.width !== w) this.cache.width = w;
     if (this.cache.height !== h) this.cache.height = h;
-    const ctx = this.cacheCtx;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, w, h);
-    // Zeichnen in Tile-Einheiten; leichtes Überzeichnen gegen Kantenritze.
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    const eps = 0.02;
-    for (let y = 0; y < world.height; y++) {
-      const row = y * world.width;
-      for (let x = 0; x < world.width; x++) {
-        const tileId = world.tiles[row + x];
-        const tile = tileId === undefined ? undefined : TILE_TYPES[tileId];
-        if (tile === undefined) continue;
-        ctx.fillStyle = tile.color;
-        ctx.fillRect(x, y, 1 + eps, 1 + eps);
-      }
-    }
+    this.cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
+    this.cacheCtx.imageSmoothingEnabled = false;
+    this.cacheCtx.clearRect(0, 0, w, h);
+    this.cacheCtx.drawImage(this.mapCanvas, 0, 0, w, h);
   }
 }
