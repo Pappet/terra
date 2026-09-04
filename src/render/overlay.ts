@@ -7,6 +7,7 @@ import {
   overlayById,
   type OverlayDef,
 } from '../data/overlays';
+import { BUILDING_COLORS, ZONE_COLORS } from '../data/cities';
 import { ROAD_BY_ID, ROAD_TYPES } from '../data/roads';
 import { TILE_TYPES } from '../data/tiles';
 import type { World } from '../sim/world';
@@ -17,8 +18,14 @@ interface Rgb {
   b: number;
 }
 
+function mapToRgb(map: ReadonlyMap<number, string>): Map<number, Rgb> {
+  return new Map([...map.entries()].map(([k, v]) => [k, hexToRgb(v)]));
+}
+
 const roadColors = ROAD_TYPES.map((r) => hexToRgb(r.color));
 const roadColorById = new Map<number, Rgb>(ROAD_TYPES.map((r) => [r.id, hexToRgb(r.color)]));
+const buildingColorById = mapToRgb(BUILDING_COLORS);
+const zoneColorById = mapToRgb(ZONE_COLORS);
 const routeHighlight = hexToRgb('#e08a3c');
 const routeStart = hexToRgb('#ffd27a');
 const routeGoal = hexToRgb('#ff5f4a');
@@ -64,13 +71,45 @@ export function fillTileColors(world: World, overlayId: string, rgba: Uint8Clamp
   const tiles = world.tiles;
   const layers = world.layers;
 
+  const colors = TILE_TYPES.map((t) => hexToRgb(t.color));
+
+  /** Oberflächenfarbe mit Strassen/Gebäuden als Überprägung. */
+  const baseColor = (i: number): Rgb => {
+    const buildingId = world.buildingIndex[i] ?? 0;
+    if (buildingId !== 0) {
+      const bType = world.buildings.type[buildingId - 1] ?? 0;
+      const c = buildingColorById.get(bType);
+      if (c !== undefined) return c;
+    }
+    const road = ROAD_BY_ID.get(world.roads[i] ?? 0);
+    if (road !== undefined) {
+      const c = roadColorById.get(road.id);
+      if (c !== undefined) return c;
+    }
+    return colors[tiles[i] ?? 0] ?? fallback;
+  };
+
   switch (def.kind) {
     case 'surface': {
-      const colors = TILE_TYPES.map((t) => hexToRgb(t.color));
       for (let i = 0; i < width * height; i++) {
-        const road = ROAD_BY_ID.get(world.roads[i] ?? 0);
-        // Strassen überprägen die Oberfläche (sichtbar im normalen Kartenbild).
-        const c = road !== undefined ? (roadColorById.get(road.id) ?? fallback) : (colors[tiles[i] ?? 0] ?? fallback);
+        const c = baseColor(i);
+        rgba[i * 4] = c.r;
+        rgba[i * 4 + 1] = c.g;
+        rgba[i * 4 + 2] = c.b;
+        rgba[i * 4 + 3] = 255;
+      }
+      return;
+    }
+    case 'zones': {
+      for (let i = 0; i < width * height; i++) {
+        const zone = world.zoneType[i] ?? 0;
+        const buildingId = world.buildingIndex[i] ?? 0;
+        const c =
+          buildingId !== 0
+            ? (buildingColorById.get(world.buildings.type[buildingId - 1] ?? 0) ?? fallback)
+            : zone !== 0
+              ? (zoneColorById.get(zone) ?? fallback)
+              : (colors[tiles[i] ?? 0] ?? fallback);
         rgba[i * 4] = c.r;
         rgba[i * 4 + 1] = c.g;
         rgba[i * 4 + 2] = c.b;

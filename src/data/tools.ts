@@ -3,7 +3,7 @@
  * aus einer Mausgeste entstehen – die Sim sieht nur Actions.
  */
 export interface ToolDef {
-  readonly id: 'paint' | 'road' | 'demolish' | 'route';
+  readonly id: 'paint' | 'road' | 'demolish' | 'route' | 'zone';
   readonly name: string;
   readonly hint: string;
 }
@@ -11,6 +11,7 @@ export interface ToolDef {
 export const TOOLS: readonly ToolDef[] = [
   { id: 'paint', name: 'Malen', hint: 'Tiles übermalen (Debug-Editor)' },
   { id: 'road', name: 'Strasse', hint: 'Strassen bauen/ausbauen (ziehbar)' },
+  { id: 'zone', name: 'Zonen', hint: 'Wohnen/Gewerbe/Industrie nahe Städten zonen (ziehbar)' },
   { id: 'demolish', name: 'Abriss', hint: 'Strassen abreissen (ziehbar)' },
   { id: 'route', name: 'Route', hint: 'Klicken: Start, zweiter Klick: Ziel' },
 ];

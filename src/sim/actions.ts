@@ -8,6 +8,9 @@
  */
 import { ROAD_BY_ID } from '../data/roads';
 import { TILE_TYPES } from '../data/tiles';
+import { CITIES } from '../data/cities';
+import type { Cities } from './cities';
+import type { Buildings } from './buildings';
 
 /** Struktur-Schnittstelle auf dem Weltzustand, den Actions brauchen. */
 export interface ActionContext {
@@ -16,6 +19,14 @@ export interface ActionContext {
   readonly tiles: Uint8Array;
   readonly water: Uint8Array;
   readonly roads: Uint8Array;
+  readonly cities: Cities;
+  readonly buildings: Buildings;
+  readonly zoneType: Uint8Array;
+  readonly zoneCity: Int16Array;
+  /** 0 = kein Gebäude, sonst Gebäude-ID. */
+  readonly buildingIndex: Int32Array;
+  /** Tick-Nummer, die dieses Update abschliesst (Aktionen gelten als in diesem Tick passiert). */
+  readonly currentTick: number;
   treasury: number;
   /** Grund des letzten abgelehnten Calls (UI-Sichtbar), sonst null. */
   lastRejected: string | null;
@@ -33,7 +44,11 @@ export type GameAction =
   /** Route von->to berechnen lassen (Ergebnis: World.route, sichtbar im Overlay). */
   | { kind: 'requestRoute'; from: number; to: number }
   /** Angezeigte Route verwerfen. */
-  | { kind: 'clearRoute' };
+  | { kind: 'clearRoute' }
+  /** Stadt gründen (auf Land, Mindestabstand zu anderen Zentren). */
+  | { kind: 'foundCity'; x: number; y: number; name: string }
+  /** Zone setzen (1=R, 2=C, 3=I) oder aufheben (0), nahe einer Stadt. */
+  | { kind: 'paintZone'; x: number; y: number; zone: number };
 
 /**
  * Action anwenden. Liefert true, wenn sie ausgeführt wurde.
@@ -85,6 +100,48 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
     }
     case 'clearRoute': {
       ctx.routeRequest = { from: -1, to: -1 };
+      return true;
+    }
+    case 'foundCity': {
+      const { x, y, name } = action;
+      if (!inBounds(ctx, x, y)) return true;
+      const idx = y * ctx.width + x;
+      if ((ctx.water[idx] ?? 0) === 1) {
+        return reject(ctx, `Stadtgründung braucht Land (${x},${y})`);
+      }
+      if (ctx.cities.distanceToNearest(x, y) < CITIES.minFoundingDistance) {
+        return reject(ctx, `Zu nah an bestehender Stadt (min. ${CITIES.minFoundingDistance} Tiles)`);
+      }
+      ctx.cities.found(name, x, y, ctx.currentTick);
+      return true;
+    }
+    case 'paintZone': {
+      const { x, y, zone } = action;
+      if (!Number.isInteger(zone) || zone < 0 || zone > 3) {
+        throw new Error(`paintZone: unbekannte Zone ${zone}`);
+      }
+      if (!inBounds(ctx, x, y)) return true;
+      const idx = y * ctx.width + x;
+      if ((ctx.water[idx] ?? 0) === 1) {
+        return reject(ctx, 'Kein Zonen auf Wasser');
+      }
+      if ((ctx.roads[idx] ?? 0) !== 0) {
+        return reject(ctx, 'Zonen unter Strassen nicht möglich');
+      }
+      if ((ctx.buildingIndex[idx] ?? 0) !== 0) {
+        return reject(ctx, 'Tile ist bebaut');
+      }
+      if (zone === 0) {
+        ctx.zoneType[idx] = 0;
+        ctx.zoneCity[idx] = 0;
+        return true;
+      }
+      const nearest = ctx.cities.nearest(x, y);
+      if (nearest === null || nearest.dist > CITIES.maxZoneDistance) {
+        return reject(ctx, `Ausserhalb des Stadtgebiets (max. ${CITIES.maxZoneDistance} Tiles)`);
+      }
+      ctx.zoneType[idx] = zone;
+      ctx.zoneCity[idx] = nearest.id;
       return true;
     }
     default: {

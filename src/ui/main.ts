@@ -13,7 +13,7 @@ import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '..
 import { Hud } from './hud';
 import { attachInput } from './input';
 
-type ToolId = 'paint' | 'road' | 'demolish' | 'route';
+type ToolId = 'paint' | 'road' | 'demolish' | 'route' | 'zone';
 
 function seedFromUrl(): number {
   const raw = new URLSearchParams(window.location.search).get('seed');
@@ -39,6 +39,7 @@ let activePaintTile = 1;
 let activeOverlay = 'surface';
 let activeTool: ToolId = 'road';
 let activeRoadType = 2;
+let activeZone = 1;
 let routeFrom: number | null = null;
 
 // Minimap: Klick/Drag zentriert die Kamera
@@ -102,6 +103,10 @@ const hud = new Hud(hudContainer, {
     activeRoadType = roadId;
     hud.setActiveRoadType(roadId);
   },
+  onZoneType: (zone) => {
+    activeZone = zone;
+    hud.setActiveZoneType(zone);
+  },
   onPaintTile: (tileId) => {
     activePaintTile = tileId;
     hud.setActivePaintTile(tileId);
@@ -139,6 +144,9 @@ const input = attachInput(canvas, {
         break;
       case 'road':
         currentWorld.enqueue({ kind: 'buildRoad', x, y, road: activeRoadType });
+        break;
+      case 'zone':
+        currentWorld.enqueue({ kind: 'paintZone', x, y, zone: activeZone });
         break;
       case 'demolish':
         currentWorld.enqueue({ kind: 'demolishRoad', x, y });

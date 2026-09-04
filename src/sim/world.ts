@@ -10,7 +10,9 @@
  * Der Konstruktor erzeugt die Welt prozedural (M1) – gleicher Seed, gleiche Welt.
  */
 import { applyAction, type ActionContext, type GameAction } from './actions';
-import { base64ToBytes, bytesToBase64 } from './base64';
+import { base64ToBytes, bytesToBase64, bytesToInt16, int16ToBytes } from './base64';
+import { Buildings } from './buildings';
+import { Cities } from './cities';
 import { PathFinder } from './pathfinding';
 import { Rng } from './rng';
 import { SIM_CONFIG } from '../data/config';
@@ -30,7 +32,7 @@ export interface WorldLayers extends DerivedLayers {
   readonly deposits: Uint8Array;
 }
 
-/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 3). */
+/** JSON-Savegame-Layout (Version in SIM_CONFIG.saveVersion, aktuell 5). */
 export interface SerializedWorld {
   saveVersion: number;
   seed: number;
@@ -40,6 +42,10 @@ export interface SerializedWorld {
   treasury: number;
   tiles: string;
   roads: string;
+  cities: ReturnType<Cities['serialize']>;
+  buildings: ReturnType<Buildings['serialize']>;
+  zoneType: string;
+  zoneCity: string;
   layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
@@ -65,6 +71,16 @@ export class World {
   layers: WorldLayers;
   /** Strassentyp pro Tile (0 = keine Strasse, siehe /src/data/roads.ts). */
   roads: Uint8Array;
+  /** Städte als SoA; IDs beginnen bei 1. */
+  cities: Cities;
+  /** Gebäude als SoA; IDs beginnen bei 1. */
+  buildings: Buildings;
+  /** Zonen-Typ pro Tile (0 = keine Zone, 1 R, 2 C, 3 I). */
+  zoneType: Uint8Array;
+  /** Stadt-ID der Zone (0 = keine). */
+  zoneCity: Int16Array;
+  /** Gebäude-ID pro Tile (0 = keins). */
+  buildingIndex: Int32Array;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
@@ -94,6 +110,48 @@ export class World {
     this.tiles = generateSurface(terrain, derived);
     this.layers = { ...terrain, ...derived, deposits };
     this.roads = new Uint8Array(width * height);
+    this.cities = new Cities();
+    this.buildings = new Buildings();
+    this.zoneType = new Uint8Array(width * height);
+    this.zoneCity = new Int16Array(width * height);
+    this.buildingIndex = new Int32Array(width * height);
+  }
+
+  /**
+   * Gebäude an einer Stelle registrieren (Tick-System M3.4); pflegt den
+   * Tile-Index. Wirft, wenn das Tile bereits bebaut ist.
+   */
+  addBuildingAt(cityId: number, x: number, y: number, type: number): number {
+    const idx = y * this.width + x;
+    if ((this.buildingIndex[idx] ?? 0) !== 0) {
+      throw new Error(`addBuildingAt: Tile ${x},${y} ist bereits bebaut`);
+    }
+    const id = this.buildings.add(cityId, x, y, type);
+    this.buildingIndex[idx] = id;
+    this.tileRev++;
+    return id;
+  }
+
+  /**
+   * Gebäude (0-basierter Array-Index) entfernen und Tile-Index aufräumen.
+   * Achtung: Swap-Removal ändert die ID des letzten Gebäudes – der
+   * Tile-Index wird entsprechend nachgezogen.
+   */
+  removeBuildingAt(index: number): void {
+    const lastId = this.buildings.count;
+    if (index < 0 || index >= lastId) {
+      throw new Error(`removeBuildingAt: Index ${index} ausserhalb [0, ${lastId})`);
+    }
+    const rx = this.buildings.x[index] as number;
+    const ry = this.buildings.y[index] as number;
+    this.buildingIndex[ry * this.width + rx] = 0;
+    if (index !== lastId - 1) {
+      const mx = this.buildings.x[lastId - 1] as number;
+      const my = this.buildings.y[lastId - 1] as number;
+      this.buildingIndex[my * this.width + mx] = index + 1; // neue ID des verschobenen Gebäudes
+    }
+    this.buildings.removeAt(index);
+    this.tileRev++;
   }
 
   /** Action einreihen; sie greift zu Beginn des nächsten update(). */
@@ -151,6 +209,12 @@ export class World {
       tiles: this.tiles,
       water: this.layers.water,
       roads: this.roads,
+      cities: this.cities,
+      buildings: this.buildings,
+      zoneType: this.zoneType,
+      zoneCity: this.zoneCity,
+      buildingIndex: this.buildingIndex,
+      currentTick: this.currentTick,
       rev: this.tileRev,
       treasury: this.treasury,
       lastRejected: this.lastRejected,
@@ -167,6 +231,11 @@ export class World {
     return this.layers.water;
   }
 
+  /** Tick-Nummer, die das laufende update() abschliesst (ActionContext-Kontrakt). */
+  get currentTick(): number {
+    return this.tick + 1;
+  }
+
   serialize(): SerializedWorld {
     const layers = {} as Record<keyof WorldLayers, string>;
     for (const key of LAYER_KEYS) {
@@ -181,6 +250,10 @@ export class World {
       treasury: this.treasury,
       tiles: bytesToBase64(this.tiles),
       roads: bytesToBase64(this.roads),
+      cities: this.cities.serialize(),
+      buildings: this.buildings.serialize(),
+      zoneType: bytesToBase64(this.zoneType),
+      zoneCity: bytesToBase64(int16ToBytes(this.zoneCity)),
       layers,
       rngState: this.rng.stateU32,
     };
@@ -217,6 +290,30 @@ export class World {
     const world = new World(seed, width, height);
     world.tiles = decodeLayer(d.tiles, 'tiles', size, 0, TILE_TYPES.length - 1);
     world.roads = decodeLayer(d.roads, 'roads', size, 0, 255);
+    world.cities = Cities.deserialize(d.cities);
+    world.buildings = Buildings.deserialize(d.buildings);
+    world.zoneType = decodeLayer(d.zoneType, 'zoneType', size, 0, 3);
+    const zoneCityBytes = base64ToBytes(typeof d.zoneCity === 'string' ? d.zoneCity : '');
+    if (zoneCityBytes.length !== size * 2) {
+      throw new Error(`Savegame: zoneCity hat ${zoneCityBytes.length} Bytes, erwartet ${size * 2}`);
+    }
+    world.zoneCity = bytesToInt16(zoneCityBytes);
+    for (let i = 0; i < size; i++) {
+      const cityId = world.zoneCity[i] ?? 0;
+      if (cityId < 0 || cityId > world.cities.count) {
+        throw new Error(`Savegame: zoneCity[${i}] verweist auf unbekannte Stadt ${cityId}`);
+      }
+    }
+    // buildingIndex ist abgeleitet -> aus den Gebäuden rekonstruieren.
+    for (let b = 0; b < world.buildings.count; b++) {
+      const bx = world.buildings.x[b] as number;
+      const by = world.buildings.y[b] as number;
+      const idx = by * width + bx;
+      if ((world.buildingIndex[idx] ?? 0) !== 0) {
+        throw new Error(`Savegame: zwei Gebäude auf Tile ${bx},${by}`);
+      }
+      world.buildingIndex[idx] = b + 1;
+    }
     const treasury = d.treasury;
     if (typeof treasury !== 'number' || !Number.isFinite(treasury) || treasury < 0) {
       throw new Error(`Savegame: treasury ist keine gültige Zahl: ${String(treasury)}`);
@@ -269,6 +366,7 @@ export function equalWorlds(a: World, b: World): boolean {
   const arrays: Array<[Uint8Array, Uint8Array]> = [
     [a.tiles, b.tiles],
     [a.roads, b.roads],
+    [a.zoneType, b.zoneType],
     [a.layers.elevation, b.layers.elevation],
     [a.layers.water, b.layers.water],
     [a.layers.river, b.layers.river],
@@ -281,6 +379,19 @@ export function equalWorlds(a: World, b: World): boolean {
     for (let i = 0; i < x.length; i++) {
       if (x[i] !== y[i]) return false;
     }
+  }
+  // Städte & Gebäude (SoA) + Zonen-Besitz + Gebäude-Index.
+  if (
+    a.cities.count !== b.cities.count ||
+    a.buildings.count !== b.buildings.count ||
+    JSON.stringify(a.cities.serialize()) !== JSON.stringify(b.cities.serialize()) ||
+    JSON.stringify(a.buildings.serialize()) !== JSON.stringify(b.buildings.serialize())
+  ) {
+    return false;
+  }
+  for (let i = 0; i < a.zoneCity.length; i++) {
+    if (a.zoneCity[i] !== b.zoneCity[i]) return false;
+    if (a.buildingIndex[i] !== b.buildingIndex[i]) return false;
   }
   return true;
 }

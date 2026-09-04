@@ -1,5 +1,19 @@
 # JOURNAL
 
+## 2026-03-05 – M3.1 Städte-Datenmodell
+**Gebaut:** `Cities` als SoA (IDs ab 1, Namen/x/y/founded), Action `foundCity` (Land + Mindestabstand), Savegame **v4** mit Städten. ActionContext erweitert um `cities` und `currentTick` (Aktionen gelten als im abschliessenden Tick passiert – Gründungszeitpunkt ist damit eindeutig). Werkzeuge/Marker-Rendering folgen mit M3.2/M3.5.
+**Entscheidungen:**
+- SoA mit plain Arrays für Städte statt TypedArrays: Namen erzwingen string[] ohnehin; TypedArrays kommen in M4 für Kohorten (fixe Skalare), dokumentiert als bewusster Pragmatismus – Serialisierbarkeit bleibt garantiert.
+- Semantik "Aktionen gelten im abschliessenden Tick": state nach update() IST Tick N; founded = N. Testbestätigung statt stiller Konvention.
+**Offen:** nichts.
+
+## 2026-03-05 – M2.5 Unterhaltskosten + M2-Abschluss
+**Gebaut:** `upkeepPerTick` (Summe über alle Strassentiles, nur bei Strassenänderungen neu summiert), verbucht zu **Tickbeginn** auf den Bestand – der Bautick selbst ist gratis (Bau zahlt Baukosten, Unterhalt greift ab nächstem Tick). `deserialize` berechnet den Unterhalt beim Laden nach (echter Bug, den der Roundtrip-Test aufdeckte). HUD-Infozeile zeigt Kasse + Unterhalt. 118 Tests grün, Build grün. **M2 ist damit fertig: DoD "Zwei Punkte verbinden, Route und Reisezeit werden angezeigt" erfüllt.**
+**Entscheidungen:**
+- Unterhalt zu Tickbeginn auf den Bestand: einfache, deterministische Semantik ("Was am Tickbeginn steht, kostet diesen Tick").
+- Float-Akkumulation der Kasse (0.01er Beträge) mit toBeCloseTo getestet; bei M7 (Budget/Statistik) wird die Kasse voraussichtlich auf Centbeträge gerundet (BACKLOG).
+**Offen:** Manuelle Browser-Abnahme durch Peter (FRAGEN.md); M3 (Siedlung) beginnt.
+
 ## 2026-03-05 – M2.4 Werkzeug-UI + Strassen-/Routen-Overlays
 **Gebaut:** Werkzeuge (Malen / Strasse / Abriss / Route) unten mittig; Kontextzeile zeigt je nach Werkzeug Tile-Palette oder Strassentypen mit Kosten-Tooltip. Route-Werkzeug zweiphasig (Klick Start, Klick Ziel); Drag baut/reisst kontinuierlich ab. Neue Overlays "Strassen" und "Route" (Oberflächenbasis + Highlight, Start/Ziel farblich); Oberflächen- und Minimap-Darstellung überprägt Strassen. `lastRejected` wird als HUD-Flash angezeigt, Infozeile zeigt Pfadlänge + Reisezeit.
 **Entscheidungen:**

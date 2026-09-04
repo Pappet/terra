@@ -3,8 +3,8 @@
  * eigene Datendateien (z.B. tiles.ts, ab M1 Gebäude/Rezepte).
  */
 export const SIM_CONFIG = {
-  /** Savegame-Formatversion; wird beim Laden geprüft. v3: Strassen + Kasse. */
-  saveVersion: 3,
+  /** Savegame-Formatversion; wird beim Laden geprüft. v5: Zonen + Gebäude. */
+  saveVersion: 5,
 
   /** Startkapital der Staatskasse. */
   startingTreasury: 500,

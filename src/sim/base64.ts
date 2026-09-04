@@ -49,3 +49,25 @@ export function base64ToBytes(text: string): Uint8Array {
   }
   return bytes;
 }
+
+/** Int16Array als Little-Endian-Bytes (für base64-Savegames). */
+export function int16ToBytes(arr: Int16Array): Uint8Array {
+  const out = new Uint8Array(arr.length * 2);
+  for (let i = 0; i < arr.length; i++) {
+    const v = arr[i] ?? 0;
+    out[i * 2] = v & 0xff;
+    out[i * 2 + 1] = (v >> 8) & 0xff;
+  }
+  return out;
+}
+
+export function bytesToInt16(bytes: Uint8Array): Int16Array {
+  if (bytes.length % 2 !== 0) {
+    throw new Error('int16: Byte-Anzahl ist ungerade');
+  }
+  const out = new Int16Array(bytes.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = (bytes[i * 2] as number) | ((bytes[i * 2 + 1] as number) << 8);
+  }
+  return out;
+}

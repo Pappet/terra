@@ -14,23 +14,30 @@ Wald, Vorkommen (Stein, Ton, Kohle, Eisen, Öl); Minimap; jeder Layer als Debug-
 Tasks: M1.1 Noise · M1.2 Höhe+Wasser · M1.3 Flüsse · M1.4 Fruchtbarkeit+Wald ·
 M1.5 Vorkommen · M1.6 Layer im WorldState/Savegame v2 · M1.7 Overlays+Minimap · M1.8 Repro-Tests.
 
-## M2 – Netz (AKTUELL)
+## M2 – Netz (ABGESCHLOSSEN)
+
+DoD erfüllt: Strassen bauen/abrissen per Drag mit Bau-/Unterhaltskosten; drei Typen mit
+Kapazität/Tempo; Grid-Graph + A* mit Cache; Route + Reisezeit sichtbar (Overlay + Infozeile).
+Tasks: M2.1 Datenmodell · M2.2 A*+Cache · M2.3 Reisezeit+Route-Action · M2.4 Werkzeug-UI · M2.5 Unterhalt.
+
+## M3 – Siedlung (AKTUELL)
 
 DoD:
-- Strassen bauen und abreissen mit der Maus (Drag), Bau- und Unterhaltskosten.
-- Strassentypen mit Kapazität und Tempo.
-- Aufbau eines Graphen aus dem Grid, A*-Pathfinding mit Cache.
-- Zwei Punkte verbinden: Route und Reisezeit werden angezeigt.
+- Stadtgründung an beliebiger Stelle (auf Land, per Werkzeug).
+- Zonen (Wohnen/Gewerbe/Industrie) innerhalb eines Stadtradius.
+- Gebäude entstehen und verfallen abhängig von Nachfrage, Strassenanschluss und Lage.
+- Eine gezonte, angeschlossene Stadt wächst über die Zeit von selbst.
 
 Tasks:
-- [x] M2.1 Strassen-Datenmodell: road-Layer im WorldState, Strassentypen + Kosten in /src/data, Actions buildRoad/demolishRoad
-- [x] M2.2 Grid-Graph + A* mit Cache (DOM-frei, getestet: Korrektheit, Determinismus, Cache-Wirksamkeit)
-- [x] M2.3 Reisezeit-Modell pro Strassentyp/Terrain, Routenberechnung als Action/Ergebnis-Layer
-- [x] M2.4 UI: Drag-Bau/-Abriss mit Kostenabzug, Routen-Overlay (Pfad + Reisezeit-Anzeige)
-- [~] M2.5 Unterhaltskosten-Basis (pro Tick verbucht, sichtbar im HUD), Savegame erweitert
+- [x] M3.1 Städte-Datenmodell: cities als SoA (IDs, Position, Name), Action foundCity
+- [~] M3.2 Zonen als Layer + Zonen-Werkzeug/Actions, Gebäude-Datenmodell (SoA)
+- [ ] M3.3 Nachfrage-Modell (R/C/I im Gleichgewicht, Wachstumsdruck aus Anschluss/Lage)
+- [ ] M3.4 Gebäude-Entstehung/-Verfall pro Tick (gezont + angeschlossen -> Bau; ohne Anschluss -> Verfall)
+- [ ] M3.5 Stadt-Panel (Bevölkerung/Zonen/Gebäude), Debug-Overlay Zonen/Gebäude, Savegame v4
+- [ ] M3.6 Wachstums-Nachweis: gezonte angeschlossene Stadt wächst; nicht angeschlossene schrumpft
 
-## M3 – Siedlung (nächster Meilenstein, noch nicht zerlegt)
+## M4 – Menschen (nächster Meilenstein, noch nicht zerlegt)
 
-DoD: Stadtgründung an beliebiger Stelle, Zonen (Wohnen/Gewerbe/Industrie), Gebäude
-entstehen und verfallen abhängig von Nachfrage, Strassenanschluss und Lage;
-eine gezonte, angeschlossene Stadt wächst über die Zeit von selbst.
+DoD: Bevölkerung als Kohorten (Alter, Bildung, Einkommen), Arbeitsplätze, Zuweisung
+Wohnort→Arbeitsplatz über den Graphen, Reisezeit/Stau wirken zurück; Zufriedenheit,
+Zuzug/Wegzug; Pendeln über Stadtgrenzen hinweg sichtbar und reaktiv.

@@ -9,6 +9,7 @@
  * Chunk-Caching ersetzt (BACKLOG).
  */
 import { VIEW_CONFIG } from '../data/config';
+import { CITIES } from '../data/cities';
 import type { World } from '../sim/world';
 import { Camera } from './camera';
 import { fillTileColors } from './overlay';
@@ -90,9 +91,26 @@ export class Renderer {
     if (camera.zoom >= VIEW_CONFIG.gridLineMinZoom) {
       this.drawGrid(camera, world, topLeft.x, topLeft.y, mapWpx, mapHpx);
     }
+    this.drawCityMarkers(camera, world);
     ctx.strokeStyle = '#3d4652';
     ctx.lineWidth = 1;
     ctx.strokeRect(topLeft.x - 0.5, topLeft.y - 0.5, mapWpx + 1, mapHpx + 1);
+  }
+
+  /** Stadtzentren als Marker über dem Kartenbild. */
+  private drawCityMarkers(camera: Camera, world: World): void {
+    const ctx = this.ctx;
+    const radius = Math.max(3, camera.zoom * 0.8);
+    for (let i = 0; i < world.cities.count; i++) {
+      const center = camera.worldToScreen((world.cities.x[i] ?? 0) + 0.5, (world.cities.y[i] ?? 0) + 0.5);
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = CITIES.markerColor;
+      ctx.fill();
+      ctx.strokeStyle = CITIES.markerBorderColor;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
   }
 
   private drawGrid(

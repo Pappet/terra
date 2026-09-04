@@ -7,12 +7,20 @@ import { ROAD_TYPES } from '../data/roads';
 import { TOOLS } from '../data/tools';
 import { TILE_TYPES, type TileType } from '../data/tiles';
 
+const ZONE_BUTTONS: ReadonlyArray<{ zone: number; label: string }> = [
+  { zone: 1, label: 'Wohnen' },
+  { zone: 2, label: 'Gewerbe' },
+  { zone: 3, label: 'Industrie' },
+  { zone: 0, label: 'Aufheben' },
+];
+
 export interface HudCallbacks {
   onSpeed(speed: number): void;
   onPaintTile(tileId: number): void;
   onOverlay(overlayId: string): void;
   onTool(toolId: string): void;
   onRoadType(roadId: number): void;
+  onZoneType(zone: number): void;
   onSave(): void;
   onLoad(): void;
   onExport(): void;
@@ -35,8 +43,10 @@ export class Hud {
   private readonly overlayButtons = new Map<string, HTMLButtonElement>();
   private readonly toolButtons = new Map<string, HTMLButtonElement>();
   private readonly roadButtons = new Map<number, HTMLButtonElement>();
+  private readonly zoneButtons = new Map<number, HTMLButtonElement>();
   private readonly roadRow: HTMLDivElement;
   private readonly paintRow: HTMLDivElement;
+  private readonly zoneRow: HTMLDivElement;
   private readonly fileInput: HTMLInputElement;
   private flashTimer: number | undefined;
 
@@ -97,7 +107,15 @@ export class Hud {
       this.roadButtons.set(road.id, b);
       this.roadRow.append(b);
     }
-    paintPanel.append(this.roadRow, this.paintRow);
+    this.zoneRow = document.createElement('div');
+    this.zoneRow.className = 'row';
+    this.zoneRow.append(hudLabel('Zonen:'));
+    for (const zb of ZONE_BUTTONS) {
+      const b = button(zb.label, () => callbacks.onZoneType(zb.zone));
+      this.zoneButtons.set(zb.zone, b);
+      this.zoneRow.append(b);
+    }
+    paintPanel.append(this.zoneRow, this.roadRow, this.paintRow);
 
     // Overlay-Umschalter oben mittig
     const overlayPanel = document.createElement('div');
@@ -135,6 +153,7 @@ export class Hud {
     this.setActiveOverlay('surface');
     this.setActiveTool('road');
     this.setActiveRoadType(2);
+    this.setActiveZoneType(1);
   }
 
   private makePaintButton(tile: TileType, callbacks: HudCallbacks): HTMLButtonElement {
@@ -173,11 +192,18 @@ export class Hud {
     }
     this.paintRow.style.display = toolId === 'paint' ? '' : 'none';
     this.roadRow.style.display = toolId === 'road' ? '' : 'none';
+    this.zoneRow.style.display = toolId === 'zone' ? '' : 'none';
   }
 
   setActiveRoadType(roadId: number): void {
     for (const [id, b] of this.roadButtons) {
       b.classList.toggle('active', id === roadId);
+    }
+  }
+
+  setActiveZoneType(zone: number): void {
+    for (const [id, b] of this.zoneButtons) {
+      b.classList.toggle('active', id === zone);
     }
   }
 
