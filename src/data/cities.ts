@@ -31,3 +31,33 @@ export const ZONE_COLORS: ReadonlyMap<number, string> = new Map([
   [2, '#4f5f7f'],
   [3, '#7f6f3f'],
 ]);
+
+/**
+ * Wachstums- und Nachfragmodell (M3.3/M3.4). Belegung ist in M3 voll
+ * (M4 ersetzt das durch echte Kohorten); "Lage" bedeutet hier
+ * Strassenanschluss (Distanz-/Bodenwert-Komponenten kommen in M8).
+ */
+export const GROWTH = {
+  /** Einwohner pro Wohngebäude (Vollbelegung in M3). */
+  residentsPerHouse: 4,
+  /** Arbeitsplätze pro Gewerbe-/Industriegebäude. */
+  jobsPerBuilding: 4,
+  /** Ziel-Arbeitsplätze pro Einwohner. */
+  targetJobsPerResident: 0.5,
+  /** Ziel-Gewerbegebäude pro Einwohner. */
+  targetShopsPerResident: 0.12,
+  /** Ziel-Industriegebäude pro Einwohner. */
+  targetFactoriesPerResident: 0.15,
+  /** Grundnachfrage nach Wohnen (Zuzugsdruck einer existierenden Stadt). */
+  baseResidentialDemand: 0.35,
+  /** Chance pro freiem gezonten Tile und Tick, dass gebaut wird. */
+  constructionChance: 0.12,
+  /** Max. Neubauten pro Stadt und Tick. */
+  maxConstructionsPerCityPerTick: 2,
+  /** Unterhalb dieser Substanz gilt ein Gebäude als verfallen. */
+  decayConditionThreshold: 0.25,
+  /** Substanzverlust pro Tick ohne Strassenanschluss. */
+  decayPerTickWithoutRoad: 0.03,
+  /** Neubau braucht Strassenanschluss (4er-Nachbarschaft). */
+  constructionRequiresRoadAccess: true,
+} as const;
