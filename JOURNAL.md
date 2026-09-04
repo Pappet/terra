@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M5.1 Güter/Rezepte/Lager
+**Gebaut:** `/src/data/goods.ts` (6 Güter mit Basispreisen, 7 Rezepte: Holzfäller/Steinbruch/Erzgrube/Farm → Sägewerk → Werkstatt, Markt als Konsument) und `Storage` (pro Stadt Float64-Vektor über Güter, add/take mit Bestandsdeckel), Savegame **v7** (Lagervektoren). Tests: ID-Kontiguität, Kettenverweise (Holz→Bretter→Werkzeug), add/take-Deckel, Roundtrip, Ablehnung kaputter Vektoren.
+**Entscheidungen:**
+- Rezept-Zuordnung (welches I-Gebäude welches Rezept ausführt) verschiebe ich auf M5.2: Bei Fertigstellung anhand Umgebung (Wald/Fels/Erz-Vorkommen) festlegen — dann ist die DoD-Kette "Engpass Vorstufe → nachgelagert" direkt testbar.
+- Markt als reiner Konsument mit Output 0: Rezept-Invariante ist deshalb `output >= 0`, nicht `> 0` (getestet).
+**Offen:** M5.2 Produktionstick, M5.3 Preise, M5.4 Kasse, M5.5 Performance-Review, M5.6 Engpass-Nachweis.
+
 ## 2026-03-05 – M4.7 DoD-Nachweis + M4-Abschluss
 **Gebaut:** m4.proof.test.ts: Drei Städte in einer Reihe, Jobs nur in der mittleren — beide Nachbarstädte pendeln dorthin (geteilter Arbeitsmarkt, openJobs sinken), Pfad-Kapazität deckelt jeden Fluss bei 10, Chaussee-Ausbau hebt auf workerlimitiert 18 (Reaktivität). 171 Tests grün, Build grün. **M4 ist damit fertig.**
 **Entscheidungen:**
