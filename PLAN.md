@@ -40,9 +40,9 @@ DoD:
 - DoD: Zwei nahe Städte teilen sich einen Arbeitsmarkt.
 
 Tasks:
-- [~] M4.1 Kohorten-Datenmodell: pro Stadt Alters-/Bildungs-/Einkommens-Buckets (TypedArrays), Savegame v6
-- [ ] M4.2 Bevölkerungsdynamik: Alterung, Geburten/Sterbefälle, Wohnkapazität begrenzt
-- [ ] M4.3 Arbeitsplätze aus Gebäuden (R/C/I), Erwerbsquote, Zuweisung Wohnort->Job über A*
+- [x] M4.1 Kohorten-Datenmodell: pro Stadt Alters-/Bildungs-/Einkommens-Buckets (TypedArrays), Savegame v6
+- [x] M4.2 Bevölkerungsdynamik: Alterung, Geburten/Sterbefälle, Wohnkapazität begrenzt
+- [~] M4.3 Arbeitsplätze aus Gebäuden (R/C/I), Erwerbsquote, Zuweisung Wohnort->Job über A*
 - [ ] M4.4 Pendler-Modell: Job-Zuweisung über Stadtgrenzen nach Reisezeit; Stau/Kapazität dämpft
 - [ ] M4.5 Zufriedenheit + Zuzug/Wegzug (reagiert auf Jobs, Pendelzeit, Wohnraum)
 - [ ] M4.6 Pendler-Overlay (Flüsse zwischen Städten), Reaktivität auf neue Strassen getestet
