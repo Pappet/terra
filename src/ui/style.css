@@ -7,6 +7,7 @@ body {
   background: #0b0d10;
   color: #cfd6dd;
   font-family: monospace;
+  font-size: 13px;
 }
 
 #game {
@@ -15,14 +16,77 @@ body {
   height: 100vh;
 }
 
-#hud {
+#hud .panel {
   position: fixed;
-  top: 8px;
-  left: 8px;
   background: rgba(10, 12, 16, 0.85);
   border: 1px solid #2a313a;
   padding: 6px 10px;
-  font-size: 12px;
-  pointer-events: none;
   white-space: pre;
+  user-select: none;
+}
+
+#hud .top-left {
+  top: 8px;
+  left: 8px;
+  pointer-events: none;
+}
+
+#hud .top-right {
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+#hud .bottom-left {
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#hud .bottom-right {
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+#hud button {
+  background: #161b22;
+  color: #cfd6dd;
+  border: 1px solid #2a313a;
+  padding: 4px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+#hud button:hover {
+  background: #1f2733;
+}
+
+#hud button.active {
+  background: #2d4a63;
+  border-color: #4a7ba6;
+}
+
+#hud button.paint .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+#hud .label {
+  color: #7d8894;
+  margin-right: 4px;
+}
+
+#hud .flash {
+  margin-top: 4px;
+  color: #9ecb7a;
+  min-height: 1em;
 }

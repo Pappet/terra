@@ -20,7 +20,7 @@ export interface LoopUpdateResult {
 }
 
 export class SimLoop {
-  private readonly world: World;
+  private world: World;
   private readonly now: () => number;
   private readonly msPerTick: number;
   private readonly maxTicksPerFrame: number;
@@ -36,6 +36,11 @@ export class SimLoop {
     this.msPerTick = 1000 / (opts.ticksPerSecond ?? SIM_CONFIG.ticksPerSecond);
     this.maxTicksPerFrame = opts.maxTicksPerFrame ?? SIM_CONFIG.maxTicksPerFrame;
     this.lastMs = this.now();
+  }
+
+  /** Welt austauschen (Savegame laden); Geschwindigkeit bleibt erhalten. */
+  setWorld(world: World): void {
+    this.world = world;
   }
 
   get speed(): SimSpeed {
