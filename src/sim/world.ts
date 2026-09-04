@@ -17,6 +17,7 @@ import { PathFinder } from './pathfinding';
 import { Population } from './population';
 import { Rng } from './rng';
 import { runGrowthTick } from './growth';
+import { runDemographicsTick } from './demographics';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
@@ -230,6 +231,7 @@ export class World {
       }
     }
     runGrowthTick(this, this.rng);
+    runDemographicsTick(this, this.rng, this.tick);
     this.syncPopulation();
     this.tick++;
   }
