@@ -35,6 +35,15 @@ function hexToRgb(hex: string): Rgb {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
+/** Linear zwischen zwei Farben mischen (t = Anteil b). */
+function mix(a: Rgb, b: Rgb, t: number): Rgb {
+  return {
+    r: Math.round(a.r + (b.r - a.r) * t),
+    g: Math.round(a.g + (b.g - a.g) * t),
+    b: Math.round(a.b + (b.b - a.b) * t),
+  };
+}
+
 const gradientLuts = new Map<string, Uint8Array>();
 
 function gradientLut(def: OverlayDef): Uint8Array {
@@ -92,7 +101,14 @@ export function fillTileColors(world: World, overlayId: string, rgba: Uint8Clamp
   switch (def.kind) {
     case 'surface': {
       for (let i = 0; i < width * height; i++) {
-        const c = baseColor(i);
+        let c = baseColor(i);
+        // Unbebaute Zonen als Tint überprägen – gemalte Zonen sind sonst im
+        // Standard-Overlay unsichtbar (Feedback beim Zonen malen).
+        const zone = (world.buildingIndex[i] ?? 0) === 0 ? (world.zoneType[i] ?? 0) : 0;
+        if (zone !== 0) {
+          const zc = zoneColorById.get(zone);
+          if (zc !== undefined) c = mix(c, zc, 0.5);
+        }
         rgba[i * 4] = c.r;
         rgba[i * 4 + 1] = c.g;
         rgba[i * 4 + 2] = c.b;

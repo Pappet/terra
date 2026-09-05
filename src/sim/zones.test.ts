@@ -91,6 +91,25 @@ describe('M3.2 Zonen', () => {
     expect(w.zoneCity[idx]).toBe(0);
   });
 
+  it('Übersonen (R -> C)pflegt die Zonenliste ohne Duplikat', () => {
+    const w = new World(42, 128, 128);
+    foundTwo(w);
+    const spot = landNearCenter(w, CITIES.maxZoneDistance);
+    const idx = spot.y * w.width + spot.x;
+    w.enqueue({ kind: 'paintZone', x: spot.x, y: spot.y, zone: ZONE_TYPES.residential });
+    w.update();
+    const list = w.cityZoneTiles[0] as number[];
+    expect(list.filter((t) => t === idx)).toHaveLength(1);
+    w.enqueue({ kind: 'paintZone', x: spot.x, y: spot.y, zone: ZONE_TYPES.commercial });
+    w.update();
+    expect(w.zoneType[idx]).toBe(ZONE_TYPES.commercial);
+    // Mehrfaches Übermalen darf den Tile nie doppelt in der Liste lassen
+    w.enqueue({ kind: 'paintZone', x: spot.x, y: spot.y, zone: ZONE_TYPES.industrial });
+    w.update();
+    expect(w.cityZoneTiles[0]!.filter((t) => t === idx)).toHaveLength(1);
+    expect(w.zoneCity[idx]).toBe(1);
+  });
+
   it('Gebäude-Registrierung pflegt den Tile-Index inkl. Swap-Removal', () => {
     const w = new World(42, 128, 128);
     foundTwo(w);

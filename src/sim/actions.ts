@@ -194,9 +194,15 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
       if (nearest === null || nearest.dist > CITIES.maxZoneDistance) {
         return reject(ctx, `Ausserhalb des Stadtgebiets (max. ${CITIES.maxZoneDistance} Tiles)`);
       }
+      // Übersonen räumt die alte Zuordnung ab, sonst bleibt der Tile in der
+      // alten cityZoneTiles-Liste und die alte Stadt baut dort später "falsch".
+      const prevCity = ctx.zoneCity[idx] ?? 0;
+      if (prevCity !== nearest.id) {
+        if (prevCity > 0) removeFromZoneList(ctx.cityZoneTiles, prevCity, idx);
+        addToZoneList(ctx.cityZoneTiles, nearest.id, idx);
+      }
       ctx.zoneType[idx] = zone;
       ctx.zoneCity[idx] = nearest.id;
-      addToZoneList(ctx.cityZoneTiles, nearest.id, idx);
       return true;
     }
     default: {

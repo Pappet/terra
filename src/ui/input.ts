@@ -22,8 +22,7 @@ export interface InputBinding {
   getKeyPanDir(): { dx: number; dy: number };
 }
 
-export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): InputBinding {
-  const camera = handler.camera;
+export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): InputBinding {  const camera = handler.camera;
   const pressedKeys = new Set<string>();
   const mouse = { painting: false, panning: false, lastX: 0, lastY: 0, lastTile: -1 };
   let viewportW = 1;
@@ -48,10 +47,19 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
 
   function paintUnder(ev: MouseEvent): void {
     const idx = tileUnder(ev);
-    if (idx >= 0 && idx !== mouse.lastTile) {
-      mouse.lastTile = idx;
+    if (idx < 0) {
+      mouse.lastTile = -1; // Karte verlassen: keine Linie beim Wiedereintritt
+      return;
+    }
+    if (idx === mouse.lastTile) return;
+    if (mouse.lastTile >= 0) {
+      // Schnelle Züge interpolieren, sonst entstehen löchrige Zonen/Strassen.
+      const width = handler.getMapSize().width;
+      for (const t of lineTiles(mouse.lastTile, idx, width).slice(1)) handler.paintAt(t);
+    } else {
       handler.paintAt(idx);
     }
+    mouse.lastTile = idx;
   }
 
   canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
@@ -136,4 +144,34 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
   }
 
   return { getKeyPanDir };
+}
+
+/** Gitterlinien von bis (inklusive beider Enden), Bresenham auf Tile-Basis. */
+function lineTiles(from: number, to: number, width: number): number[] {
+  const x0 = from % width;
+  const y0 = Math.floor(from / width);
+  const x1 = to % width;
+  const y1 = Math.floor(to / width);
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  let x = x0;
+  let y = y0;
+  const out: number[] = [];
+  for (;;) {
+    out.push(y * width + x);
+    if (x === x1 && y === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
+  }
+  return out;
 }

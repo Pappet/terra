@@ -46,11 +46,14 @@ export const BUILDING_COLORS: ReadonlyMap<number, string> = new Map([
   [3, '#9a8a5a'],
 ]);
 
-/** Zonen-Farben fürs Zonen-Overlay. */
+/**
+ * Zonen-Farben fürs Zonen-Overlay + Oberflächen-Tint. Bewusst hell/satt genug,
+ * um sich auch auf Gras (#3a6b35) und Erde (#6b5335) klar abzuheben.
+ */
 export const ZONE_COLORS: ReadonlyMap<number, string> = new Map([
-  [1, '#4f7a4f'],
-  [2, '#4f5f7f'],
-  [3, '#7f6f3f'],
+  [1, '#63c263'],
+  [2, '#6f9be8'],
+  [3, '#e0a83c'],
 ]);
 
 /**

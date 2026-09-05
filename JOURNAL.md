@@ -394,3 +394,11 @@ Einkommens-Mobilität, Pendler-Visualisierung, dynamische Konsumnachfrage, Ereig
 - Kein DOM-Framework: weiter reines DOM, Struktur über zwei Stack-Container in `Hud` (`leftSlot`/`rightSlot`), Minimap/Stats hängen main-seitig an die Slots.
 - Nur UI/Render-Bootstrap angefasst – Sim, Golden Master und Savegame-Format unberührt.
 **Offen:** nichts.
+
+## 2026-03-05 – Bugfix Zonen-UX („Zonen wirken wonky")
+**Gebaut:** Diagnose: Zonen waren im Standard-Overlay „Oberfläche" gar nicht sichtbar (nur im Zonen-Overlay), und die Zonenfarben (#4f7a4f etc.) sind auf Gras/Erde fast nicht abhebsam – man malt ins Leere und Wunder, wo Gebäude später entstehen. Fix: (1) surface-Overlay überprägt unbebaute Zonen als 50%-Tint (Gebäude bleiben unverfärbt); (2) hellere/sattere Zonenfarben (#63c263/#6f9be8/#e0a83c); (3) Drag-Interpolation per Bresenham in input.ts – schnelle Mausbewegungen übersprungen Tiles und hinterliessen löchrige Zonen; (4) paintZone räumt bei Übersonen konsistent die alte cityZoneTiles-Zuordnung ab (Invariante; mit deterministischem nearest() bisher nicht erreichbar, aber defensiv korrekt) + Regressionstest.
+**Entscheidungen:**
+- Kein Brush/Radius für Zonen: 1 Tile pro Klick bleibt, Feedback kommt jetzt über den sofort sichtbaren Tint.
+- Gebäude wachsen weiterhin nur auf gezonten Tiles MIT Strassenanschluss – Zonen ohne angrenzende Strasse bleiben leer (M3-Regel, kein UI-Fix).
+- Golden-Master-Hash unverändert (Szenario zont jedes Tile genau einmal; Farben sind rein visuell).
+**Offen:** nichts.
