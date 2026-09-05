@@ -53,7 +53,7 @@ Marge-Priorisierung (Verstopfung); Import/Export-Bilanzen (Savegame v9); Handels
 DoD-Test m6.proof.test.ts (Rohstoff- vs. Industriestadt, Preis-Asymmetrie hält sich, Gegenprobe ohne Korridor).
 Tasks: M6.1 Routen-Modell · M6.2 Arbitrage · M6.3 Transport/Kapazität · M6.4 Overlay+Bilanz · M6.5 Nachweis.
 
-## M7 – Verwaltung (AKTUELL)
+## M7 – Verwaltung (ABGESCHLOSSEN)
 
 DoD:
 - Steuersätze, Budget, Unterhaltskosten, Kredite, Bankrott.
@@ -67,7 +67,7 @@ Tasks:
 - [x] M7.3 Kredite: takeLoan/repayLoan, Zins kapitalisiert, Kreditlimit maxDebtPerAdult × Erwachsene
 - [x] M7.4 Bankrott: Kasse < −100 → bankrupt blockiert Bau/Zonen; Erholung ab Kasse ≥ 0 — Savegame v11
 - [x] M7.5 Statistiken: Zeitreihen (Kasse, Einwohner, Zufriedenheit) als Canvas-Liniendiagramm (Taste S) — Savegame v12
-- [ ] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay; taxRate ist bereits im Savegame)
+- [x] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay) — withUi/readUi, Savegame erweitert ohne Versionsbump
 - [x] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (m7.proof.test.ts, deterministisch)
 
 ## M8 – Tiefe (nächster Meilenstein, noch nicht zerlegt)

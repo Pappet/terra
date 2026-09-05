@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M7.6 UI-Zustand im Savegame + M7-Abschluss
+**Gebaut:** `withUi`/`readUi` in persist/save.ts (UI-Zustand {speed, overlay} als optionaler `ui`-Block im Savegame-JSON, ungültige Werte neutralisiert), `saveToBrowser`/`exportToFile` betten den Zustand ein, `loadFromBrowser`/`importFromFile` liefern `{world, ui}`, main.ts wendet Speed/Overlay nach dem Laden an. Tests: Einbetten/Rücklesen, Neutralisierung, Weltanteil unverändert. 223 Tests grün, Build grün. **M7 ist damit fertig — alle DoD erfüllt inkl. Steuersatz, Kredite, Bankrott, Statistiken, UI-Zustand.**
+**Entscheidungen:**
+- UI-Zustand als optionaler JSON-Nebenzweig statt sim-Formatänderung: Kein Versionsbump nötig, alte Stände laden weiter (readUi ergibt null).
+- load-Funktionen liefern jetzt {world, ui} — saubere Trennung Sim/UI beim Wiederherstellen.
+**Offen:** M8 Tiefe — Zerlegung folgt.
+
 ## 2026-03-05 – M7.7 DoD-Nachweis (Ruin durch Steuerpolitik)
 **Gebaut:** m7.proof.test.ts auf der erweiterten lineWorld-Fake (demographics+settleResidents+bankrupt in der Pipeline): Zwei identische Städte, einziger Unterschied Steuersatz 100 % vs. 25 %, 600 Ticks/3 Intervalle — Ruin-Stadt klarer Wegzug (8.67 < 9 Start), moderat besteuerte Stadt besser erhalten, Differenz > 0.5; deterministisch.
 **Entscheidungen + Lehren:**
