@@ -2,6 +2,19 @@
 
 Architektur- und Design-Entscheidungen mit Begründung. Neueste oben.
 
+## D007 – M9.5: FRAGEN.md geschlossen (M9, autonom entschieden)
+Beide offenen Punkte betreffen "Spielgefühl"/Grafik und blockieren die Simulation nicht:
+1. **Kamera-Tuning (M0-Abnahme im Browser):** Zoom-/Pan-Werte sind datengetrieben in
+   VIEW_CONFIG (config.ts) und damit jederzeit ohne Codeänderung verstellbar. Eingabe-
+   verarbeitung und Loop sind durch Kamera-/Loop-Tests abgedeckt; ein Browser-Blick auf
+   "Spielgefühl" ist Geschmackssache und kein Blocker. Entscheidung: Werte bleiben,
+   Feintuning bleibt Peters Teil (eine Zahl in config.ts).
+2. **Farbwelt:** Die funktionale dunkle Terrain-Palette (M1) bleibt. Simulationstiefe
+   vor Grafik; eine andere Palette ist ein reines Datending (tiles.ts-Farbtabelle) und
+   jederzeit ohne Sim-Auswirkung austauschbar.
+FRAGEN.md ist damit geleert; künftig stehen dort nur Punkte, die ohne Peters Antwort
+nicht entscheidbar sind.
+
 ## D006 – Rezeptauswahl bei Gebäudefertigstellung (M5.2)
 Jedes Gebäude trägt eine `recipe`-ID (Buildings-SoA-Spalte). Bei Fertigstellung wählt
 `chooseRecipe` deterministisch in zwei Schritten:
