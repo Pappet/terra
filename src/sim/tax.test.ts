@@ -37,9 +37,9 @@ function cityWithAdults(adults: number): World {
 }
 
 describe('M7.1 Steuersatz', () => {
-  it('Standard-Steuersatz ist 1', () => {
+  it('Standard-Steuersatz ist 0.25', () => {
     const w = cityWithAdults(5);
-    expect(w.taxRate).toBe(1);
+    expect(w.taxRate).toBe(0.25);
   });
 
   it('Steuersatz 0: keine Steuereinnahmen', () => {
@@ -74,11 +74,11 @@ describe('M7.1 Steuersatz', () => {
     const w = cityWithAdults(5);
     w.enqueue({ kind: 'setTaxRate', rate: 1.5 });
     w.update();
-    expect(w.taxRate).toBe(1);
+    expect(w.taxRate).toBe(0.25);
     expect(w.lastRejected).toMatch(/Steuersatz/);
     w.enqueue({ kind: 'setTaxRate', rate: -0.1 });
     w.update();
-    expect(w.taxRate).toBe(1);
+    expect(w.taxRate).toBe(0.25);
   });
 
   it('Steuersatz überlebt das Savegame (v10) und ist Teil des Determinismus', () => {

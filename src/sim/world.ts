@@ -76,8 +76,10 @@ export class World {
   trade: ReturnType<typeof createTradeState>;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
-  /** Globaler Steuersatz (0..1), über setTaxRate-Action geändert. */
-  taxRate = 1;
+  /** Globaler Steuersatz (0..1), über setTaxRate-Action geändert.
+   *  Start 25 %: 100 % wäre der M7.7-Ruin-Hebel und drückt die Zufriedenheit
+   *  unter die Zuzugsschwelle (kein Wachstum, garantiert Bankrott). */
+  taxRate = 0.25;
   /** Restschuld aus Krediten (M7.3). */
   debt = 0;
   /** Kreditlimit: maxDebtPerAdult × Erwachsene (im Intervall aktualisiert). */

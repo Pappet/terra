@@ -1,5 +1,29 @@
 # JOURNAL
 
+## 2026-09-05 – Balance-Hotfix: garantierte Frühbankrotte beseitigt (Golden-Master-Neuerzeugung gerechtfertigt)
+**Befund (simuliert, nicht nur vermutet):** Eine typische Eröffnung (Stadtgründung, ~48 Strassen-Tiles,
+~130 Zonen-Tiles) ging **immer** bankrott — in ~23 s bei 1x mit Werkseinstellungen. Diagnose:
+1. **Default-Steuersatz 100 %** (`world.taxRate = 1`) — genau der M7.7-Ruin-Hebel: `taxBurden −0.3`
+   drückt die Zufriedenheit auf ~0.55, **unter die Zuzugsschwelle 0.6** → kein Zuzug → keine Steuerbasis.
+2. **Steuer-/Unterhalts-Misserwägnis:** `taxPerAdultPerInterval 6` gegen Strassen-Unterhalt pro TICK
+   (1 Strasse = 6/Intervall = der Vollsteuer EINES Erwachsenen). Realistische Eröffnung: Unterhalt
+   252/Intervall gegen Einnahmen 15/Intervall.
+**Fix (nur Balance-Werte, keine Regeländerung):**
+- `world.taxRate` Default 1 → **0.25** (100 % bleibt als bewusste Spielerwahl möglich).
+- `FINANCE.taxPerAdultPerInterval` 6 → **30** (bei 25 % ≈ 7.5/Erwachsenem/Intervall).
+- `ROAD_TYPES` Unterhalt ÷ ~5–6.7: Pfad 0.002, Strasse 0.004, Chaussee 0.012 pro Tick.
+**Verifikation (Vitest-Simulationen, anschliessend entfernt):** Minimale Stadt: Kasse wächst, popuiert
+bis Kapazität, kein Bankrott über 4000 Ticks. Strassenlastige Eröffnung: statt Bankrott bei t≈450 jetzt
+erst bei t≈2000 (~100 s bei 1x) und nur bei massiver Überdimensionierung — Budget-Panel zeigt die
+Bilanz laufend, Kredite sind der vorgesehene Puffer. **Wichtig (kein Bug):** Gebäude brauchen direkte
+Strassennachbarschaft (4er-Nachbarschaft, M3-Regel) — Zonen ohne Anschluss bleiben unbebaut, die Stadt
+plateaut auf die erreichbaren Tiles. Wer wachsen will, muss Strassen NACHziehen (endloses Bauland).
+**Tests:** tax.test (Default 0.25), finance.test (Erwartung × taxRate) angepasst; Golden Master in
+eigenem Zug neu erzeugt: `5e5226f6964efe8d` → `78fc1afb30807f8a` (gerechtfertigt: Auftrags-Balance-Task
+verlangt Verhaltensänderung). 242 Tests grün, Build grün.
+**Offen (Idee für M10):** Zonen ohne Strassenanschluss im Overlay kenntlich machen (z. B. schraffiert);
+Wachstums-Panels könnten "Bauland fehlt Anschluss" melden.
+
 ## 2026-03-05 – M9.10 Abnahme: PROJEKT ABGESCHLOSSEN
 **Prüfung am Stück (protokolliert):**
 - ✅ 241 Tests grün, Testlauf ohne Fremdausgabe (nur bewusstes [perf]-Diagnoselog).

@@ -50,10 +50,11 @@ describe('M5.4 Finanzen', () => {
       guard++;
     }
     expect(w.tick % AGE_TICK_INTERVAL).toBe(0);
-    // Erwartung: 20 Erwachsene zahlen 6 * 0.6 = 3.6 pro Kopf (minus Sterblichkeit
-    // 0.002, plus minimale Geburten/Kapazitaet 0); Unterhalt: Strassen 0.12/Tick
-    // plus Gebaeude 0.06/Tick.
-    const taxes = 20 * (1 - 0.002) * FINANCE.taxPerAdultPerInterval * FINANCE.incomeFactor[0];
+    // Erwartung: 20 Erwachsene zahlen Steuern pro Kopf (minus Sterblichkeit
+    // 0.002, plus minimale Geburten/Kapazitaet 0) zum aktuellen Steuersatz;
+    // Unterhalt: Strassen + Gebaeude pro Tick.
+    const taxes =
+      20 * (1 - 0.002) * FINANCE.taxPerAdultPerInterval * FINANCE.incomeFactor[0] * w.taxRate;
     const upkeepTotal = (w.upkeepPerTick + 6 * FINANCE.buildingUpkeepPerTick) * guard;
     expect(w.treasury).toBeCloseTo(before + taxes - upkeepTotal, 1);
   });

@@ -24,7 +24,7 @@ export const ZONE_TYPES = {
  */
 export const FINANCE = {
   /** Steuern pro Erwachsenem und Demografie-Intervall (200 Ticks). */
-  taxPerAdultPerInterval: 6,
+  taxPerAdultPerInterval: 30,
   /** Einkommens-Faktor je Gruppe (niedrig/mittel/hoch). */
   incomeFactor: [0.6, 1.0, 1.6],
   /** Unterhalt pro Gebäude und Tick. */
