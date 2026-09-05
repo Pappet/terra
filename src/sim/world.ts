@@ -10,24 +10,16 @@
  * Der Konstruktor erzeugt die Welt prozedural (M1) – gleicher Seed, gleiche Welt.
  * Serialisierung/Deserialisierung/Gleichheit: siehe worldSerialize.ts.
  */
-import { applyAction, type ActionContext, type GameAction } from './actions';
+import type { ActionContext, GameAction } from './actions';
 import { Buildings } from './buildings';
 import { Cities } from './cities';
 import { PathFinder } from './pathfinding';
 import { Population } from './population';
 import { Rng } from './rng';
-import { runGrowthTick } from './growth';
-import { runDemographicsTick, runMigration, computeMaxDebt } from './demographics';
 import { Storage } from './storage';
-import { assignWorkers, type EmploymentState } from './employment';
-import { runProductionTick } from './production';
-import { updateMarket } from './market';
+import type { EmploymentState } from './employment';
 import { Market } from './market';
-import { createTradeState, runTradeTick, ensureTradeSize } from './trade';
-import { recomputePollution } from './pollution';
-import { recomputeSupply } from './networks';
-import { runEventTick } from './events';
-import { FINANCE } from '../data/cities';
+import { createTradeState, ensureTradeSize } from './trade';
 import { SIM_CONFIG } from '../data/config';
 import { ROAD_BY_ID } from '../data/roads';
 import { generateDeposits } from '../worldgen/deposits';
@@ -35,6 +27,7 @@ import { generateDerived, type DerivedLayers } from '../worldgen/derived';
 import { generateTerrain } from '../worldgen/terrain';
 import { generateSurface } from '../worldgen/surface';
 import { deserializeWorld, serializeWorld, type SerializedWorld } from './worldSerialize';
+import { runWorldTick } from './worldTick';
 
 /** Alle prozeduralen Layer des WorldState. */
 export interface WorldLayers extends DerivedLayers {
@@ -118,14 +111,18 @@ export class World {
   readonly pathfinder = new PathFinder();
   /** Aktuelle Pendler-/Beschäftigungs-Zuweisung (abgeleitet, nicht serialisiert). */
   commute: EmploymentState | null = null;
-  private commuteDirty = true;
+  /** @internal (Tick-Orchestrierung in worldTick.ts) */
+  commuteDirty = true;
   /** Gebäudebestand hat sich geändert -> Verschmutzung neu stempeln (M8.3). */
-  private pollutionDirty = true;
+  /** @internal (Tick-Orchestrierung in worldTick.ts) */
+  pollutionDirty = true;
   /** Straßen/Städte haben sich geändert -> Versorgung neu berechnen (M8.4). */
-  private supplyDirty = true;
+  /** @internal (Tick-Orchestrierung in worldTick.ts) */
+  supplyDirty = true;
   /** Profiling-Akkumulator (M9.2, nur Diagnose): null = aus. */
   private profile: Record<string, number> | null = null;
-  private queue: GameAction[] = [];
+  /** @internal (Tick-Orchestrierung in worldTick.ts) */
+  queue: GameAction[] = [];
 
   /** Subsystem-Zeiten akkumulieren (M9.2 Perf-Gate). */
   startProfiling(): void {
@@ -254,81 +251,11 @@ export class World {
 
   /** Ein Sim-Tick: Unterhalt für den Bestand, dann Actions, dann Route auswerten. */
   update(): void {
-    this.lastRejected = null;
-    this.maxDebt = computeMaxDebt(this); // Kreditlimit aktuell halten (Actions!)
-    this.treasury -= this.upkeepPerTick; // Bestand zu Tickbeginn, Bautick selbst gratis
-    // Bankrott-Prüfung (M7.4): jeder Tick, Kasse unter Grenze -> blockiert Bau
-    if (this.treasury < FINANCE.bankruptcyTreasuryLimit) {
-      this.bankrupt = true;
-    } else if (this.treasury >= 0) {
-      this.bankrupt = false;
-    }
-    let roadsChanged = false;
-    let routeDirty = false;
-    if (this.queue.length > 0) {
-      for (const action of this.queue) {
-        applyAction(this, action);
-        if (action.kind === 'buildRoad' || action.kind === 'demolishRoad') roadsChanged = true;
-        if (action.kind === 'foundCity') {
-          this.commuteDirty = true;
-          this.supplyDirty = true;
-        }
-        if (action.kind === 'requestRoute' || action.kind === 'clearRoute') routeDirty = true;
-      }
-      this.tileRev++;
-      this.queue = [];
-    }
-    if (roadsChanged) {
-      this.recomputeUpkeep(); // wirkt ab dem nächsten Tick
-      this.commuteDirty = true;
-      this.supplyDirty = true;
-      this.roadRev++; // Pfad-Cacheinvalidierung nur für Straßen (M9.2)
-    }
-    if (routeDirty && this.routeRequest !== null) {
-      const { from, to } = this.routeRequest;
-      this.routeRequest = null;
-      if (from < 0 || to < 0) {
-        this.route = null;
-      } else {
-        const result = this.pathfinder.findPath(this.routeContext(), from, to);
-        this.route =
-          result === null || result.path.length === 0
-            ? null
-            : { path: result.path, timeTicks: result.timeTicks, rev: this.tileRev };
-      }
-    }
-    // M8.4/M8.3: abgeleitete Layer (Versorgung, Verschmutzung) neu, vor Wachstum
-    this.measure('networks', () => {
-      if (this.supplyDirty) {
-        recomputeSupply(this);
-        this.supplyDirty = false;
-      }
-      if (this.pollutionDirty) {
-        recomputePollution(this);
-        this.pollutionDirty = false;
-      }
-    });
-    this.measure('growth', () => runGrowthTick(this, this.rng));
-    if (this.measure('demographics', () => runDemographicsTick(this, this.rng, this.tick + 1))) { // abschliessender Tick
-      runMigration(this, this.rng);
-      this.commuteDirty = true;
-      runEventTick(this, this.rng); // M8.5: Ereignisse deterministisch im Intervall
-    }
-    this.syncPopulation();
-    // Arbeitsplatz-Zuweisung bei jeder relevanten Änderung (Städte, Gebäude,
-    // Bevölkerung, Strassen) – sonst bleibt die letzte Zuweisung stehen.
-    if (this.commuteDirty) {
-      this.commute = this.measure('employment', () => assignWorkers(this));
-      this.commuteDirty = false;
-    }
-    const flows = this.measure('production', () => runProductionTick(this));
-    this.measure('market', () => updateMarket(this, flows));
-    this.measure('trade', () => runTradeTick(this));
-    this.tick++;
+    runWorldTick(this);
   }
 
-  /** Hält Bevölkerungs-Vektoren mit der Stadtanzahl synchron (Gründung/Laden). */
-  private syncPopulation(): void {
+  /** @internal Hält Bevölkerungs-Vektoren mit der Stadtanzahl synchron (Gründung/Laden). */
+  syncPopulation(): void {
     this.population.ensureCity(this.cities.count);
     this.storage.ensureCity(this.cities.count);
     this.market.ensureCity(this.cities.count);
@@ -354,7 +281,8 @@ export class World {
     this.upkeepPerTick = upkeep;
   }
 
-  private routeContext(): ActionContext & { rev: number } {
+  /** @internal (Route-Auswertung in worldTick.ts) */
+  routeContext(): ActionContext & { rev: number } {
     return {
       width: this.width,
       height: this.height,
