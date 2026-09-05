@@ -22,6 +22,7 @@ import { Storage } from './storage';
 import { assignWorkers, type EmploymentState } from './employment';
 import { runProductionTick } from './production';
 import { Market, updateMarket } from './market';
+import { createTradeState, runTradeTick, ensureTradeSize } from './trade';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
@@ -56,6 +57,7 @@ export interface SerializedWorld {
   population: number[][];
   storage: number[][];
   market: { prices: number[][]; produced: number[][]; consumed: number[][] };
+  trade: { exports: number[][]; imports: number[][] };
   layers: Record<keyof WorldLayers, string>;
   rngState: number;
 }
@@ -99,6 +101,8 @@ export class World {
   storage: Storage;
   /** Lokaler Markt: Preise und Nachfrage-/Angebotsraten pro Stadt. */
   market: Market;
+  /** Handel: Routen, Flüsse, Import/Export-Bilanzen. */
+  trade: ReturnType<typeof createTradeState>;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
@@ -141,6 +145,7 @@ export class World {
     this.population = new Population();
     this.storage = new Storage();
     this.market = new Market();
+    this.trade = createTradeState();
   }
 
   /** Zonen-Tile-Listen aus den Layern rekonstruieren (Laden, Aktionen pflegen sie sonst). */
@@ -265,6 +270,7 @@ export class World {
       this.commuteDirty = false;
     }
     updateMarket(this, runProductionTick(this));
+    runTradeTick(this);
     this.tick++;
   }
 
@@ -273,6 +279,7 @@ export class World {
     this.population.ensureCity(this.cities.count);
     this.storage.ensureCity(this.cities.count);
     this.market.ensureCity(this.cities.count);
+    ensureTradeSize(this.trade, this.cities.count);
   }
 
   /**
@@ -350,6 +357,7 @@ export class World {
       population: this.population.serialize(),
       storage: this.storage.serialize(),
       market: this.market.serialize(),
+      trade: { exports: this.trade.exports.map((v) => Array.from(v)), imports: this.trade.imports.map((v) => Array.from(v)) },
       layers,
       rngState: this.rng.stateU32,
     };
@@ -392,6 +400,9 @@ export class World {
     world.population = Population.deserialize(d.population);
     world.storage = Storage.deserialize(d.storage);
     world.market = Market.deserialize(d.market);
+    world.trade = createTradeState();
+    world.trade.exports = (d.trade as { exports: number[][] }).exports.map((v) => Float64Array.from(v));
+    world.trade.imports = (d.trade as { imports: number[][] }).imports.map((v) => Float64Array.from(v));
     if (world.population.perCity.length < world.cities.count) {
       throw new Error('Savegame: Bevölkerungsvektoren fehlen für geladene Städte');
     }
@@ -496,7 +507,9 @@ export function equalWorlds(a: World, b: World): boolean {
     JSON.stringify(a.cities.serialize()) !== JSON.stringify(b.cities.serialize()) ||
     JSON.stringify(a.buildings.serialize()) !== JSON.stringify(b.buildings.serialize()) ||
     JSON.stringify(a.population.serialize()) !== JSON.stringify(b.population.serialize()) ||
-    JSON.stringify(a.storage.serialize()) !== JSON.stringify(b.storage.serialize())
+    JSON.stringify(a.storage.serialize()) !== JSON.stringify(b.storage.serialize()) ||
+    JSON.stringify(a.trade.exports.map((v) => Array.from(v))) !== JSON.stringify(b.trade.exports.map((v) => Array.from(v))) ||
+    JSON.stringify(a.trade.imports.map((v) => Array.from(v))) !== JSON.stringify(b.trade.imports.map((v) => Array.from(v)))
   ) {
     return false;
   }

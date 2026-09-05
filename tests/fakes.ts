@@ -14,6 +14,7 @@ import { cohortIndex } from '../src/sim/population';
 import { assignWorkers } from '../src/sim/employment';
 import { runProductionTick } from '../src/sim/production';
 import { updateMarket } from '../src/sim/market';
+import { createTradeState, runTradeTick } from '../src/sim/trade';
 export interface LineWorldOptions {
   width: number;
   /** Strassentyp auf allen Land-Tiles (0 = keine Strassen). */
@@ -58,14 +59,22 @@ export function lineWorld(opts: LineWorldOptions): World {
     market: new Market(),
     buildingIndex: new Int32Array(width),
     treasury: 500,
+    trade: createTradeState(),
     pathfinder: new PathFinder(),
     tileRev: 0,
   } as unknown as World;
 
   if (opts.production === true) {
     (world as { update: () => void }).update = () => {
+      // syncPopulation-Äquivalent (ensureCity ist in World privat)
+      for (let c = 1; c <= world.cities.count; c++) {
+        world.population.ensureCity(c);
+        world.storage.ensureCity(c);
+        world.market.ensureCity(c);
+      }
       world.commute = assignWorkers(world);
       updateMarket(world, runProductionTick(world));
+      runTradeTick(world);
     };
   }
 
