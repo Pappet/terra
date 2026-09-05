@@ -32,6 +32,8 @@ export interface ActionContext {
   treasury: number;
   /** Grund des letzten abgelehnten Calls (UI-Sichtbar), sonst null. */
   lastRejected: string | null;
+  /** Globaler Steuersatz 0..1 (M7). */
+  taxRate: number;
   /** Vom Tick auszuwertende Routenanfrage (Route wird nach den Actions berechnet). */
   routeRequest: { from: number; to: number } | null;
 }
@@ -50,7 +52,9 @@ export type GameAction =
   /** Stadt gründen (auf Land, Mindestabstand zu anderen Zentren). */
   | { kind: 'foundCity'; x: number; y: number; name: string }
   /** Zone setzen (1=R, 2=C, 3=I) oder aufheben (0), nahe einer Stadt. */
-  | { kind: 'paintZone'; x: number; y: number; zone: number };
+  | { kind: 'paintZone'; x: number; y: number; zone: number }
+  /** Globalen Steuersatz setzen (0..1, multipliziert die Steuereinnahmen). */
+  | { kind: 'setTaxRate'; rate: number };
 
 /**
  * Action anwenden. Liefert true, wenn sie ausgeführt wurde.
@@ -102,6 +106,14 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
     }
     case 'clearRoute': {
       ctx.routeRequest = { from: -1, to: -1 };
+      return true;
+    }
+    case 'setTaxRate': {
+      const { rate } = action;
+      if (typeof rate !== 'number' || !Number.isFinite(rate) || rate < 0 || rate > 1) {
+        return reject(ctx, `Ungültiger Steuersatz: ${String(rate)}`);
+      }
+      ctx.taxRate = rate;
       return true;
     }
     case 'foundCity': {

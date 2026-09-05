@@ -16,6 +16,7 @@ const ZONE_BUTTONS: ReadonlyArray<{ zone: number; label: string }> = [
 
 export interface HudCallbacks {
   onSpeed(speed: number): void;
+  onTaxRate(rate: number): void;
   onPaintTile(tileId: number): void;
   onOverlay(overlayId: string): void;
   onTool(toolId: string): void;
@@ -47,6 +48,7 @@ export class Hud {
   private readonly roadRow: HTMLDivElement;
   private readonly paintRow: HTMLDivElement;
   private readonly zoneRow: HTMLDivElement;
+  private readonly taxButtons = new Map<number, HTMLButtonElement>();
   private cityPanel: HTMLDivElement | null = null;
   private cityListEl: HTMLDivElement | null = null;
   private readonly fileInput: HTMLInputElement;
@@ -119,6 +121,21 @@ export class Hud {
     }
     paintPanel.append(this.zoneRow, this.roadRow, this.paintRow);
 
+    // Steuersatz: eigene Zeile oben unter den Speed-Buttons
+    const taxPanel = document.createElement('div');
+    taxPanel.className = 'panel top-right';
+    taxPanel.style.top = '48px';
+    taxPanel.append(hudLabel('Steuern:'));
+    for (const rate of [0, 0.25, 0.5, 0.75, 1] as const) {
+      const b = button(
+        `${Math.round(rate * 100)}%`,
+        () => callbacks.onTaxRate(rate),
+        `Steuereinnahmen auf ${Math.round(rate * 100)} % der Basis`,
+      );
+      this.taxButtons.set(rate, b);
+      taxPanel.append(b);
+    }
+
     // Overlay-Umschalter oben mittig
     const overlayPanel = document.createElement('div');
     overlayPanel.className = 'panel top-center';
@@ -149,13 +166,20 @@ export class Hud {
       this.fileInput,
     );
 
-    container.append(statusPanel, speedPanel, overlayPanel, toolPanel, paintPanel, savePanel);
+    container.append(statusPanel, speedPanel, taxPanel, overlayPanel, toolPanel, paintPanel, savePanel);
     this.setActiveSpeed(1);
     this.setActivePaintTile(1);
     this.setActiveOverlay('surface');
     this.setActiveTool('found');
     this.setActiveRoadType(2);
     this.setActiveZoneType(1);
+    this.setActiveTaxRate(1);
+  }
+
+  setActiveTaxRate(rate: number): void {
+    for (const [r, b] of this.taxButtons) {
+      b.classList.toggle('active', r === rate);
+    }
   }
 
   /**

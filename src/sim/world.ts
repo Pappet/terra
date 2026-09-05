@@ -48,6 +48,7 @@ export interface SerializedWorld {
   width: number;
   height: number;
   treasury: number;
+  taxRate: number;
   tiles: string;
   roads: string;
   cities: ReturnType<Cities['serialize']>;
@@ -105,6 +106,8 @@ export class World {
   trade: ReturnType<typeof createTradeState>;
   /** Staatskasse. Bau-/Unterhaltskosten werden über Actions/Ticks verbucht. */
   treasury: number = SIM_CONFIG.startingTreasury;
+  /** Globaler Steuersatz (0..1), über setTaxRate-Action geändert. */
+  taxRate = 1;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
   lastRejected: string | null = null;
   /** Angezeigte Route (Snapshot bei Anfragezeit, rev = tileRev dann). Transient, nicht im Savegame. */
@@ -317,6 +320,7 @@ export class World {
       currentTick: this.currentTick,
       rev: this.tileRev,
       treasury: this.treasury,
+      taxRate: this.taxRate,
       lastRejected: this.lastRejected,
       routeRequest: this.routeRequest,
     };
@@ -348,6 +352,7 @@ export class World {
       width: this.width,
       height: this.height,
       treasury: this.treasury,
+      taxRate: this.taxRate,
       tiles: bytesToBase64(this.tiles),
       roads: bytesToBase64(this.roads),
       cities: this.cities.serialize(),
@@ -432,6 +437,11 @@ export class World {
       throw new Error(`Savegame: treasury ist keine gültige Zahl: ${String(treasury)}`);
     }
     world.treasury = treasury;
+    const taxRate = d.taxRate;
+    if (typeof taxRate !== 'number' || !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 1) {
+      throw new Error(`Savegame: taxRate ungültig: ${String(taxRate)}`);
+    }
+    world.taxRate = taxRate;
 
     if (typeof d.layers !== 'object' || d.layers === null) {
       throw new Error('Savegame: layers fehlt');
@@ -465,7 +475,7 @@ export class World {
 export function equalWorlds(a: World, b: World): boolean {
   if (
     a.seed !== b.seed || a.width !== b.width || a.height !== b.height ||
-    a.tick !== b.tick || a.treasury !== b.treasury || a.rngStateU32 !== b.rngStateU32
+    a.tick !== b.tick || a.treasury !== b.treasury || a.taxRate !== b.taxRate || a.rngStateU32 !== b.rngStateU32
   ) {
     return false;
   }

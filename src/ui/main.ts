@@ -97,6 +97,11 @@ function applyLoadedWorld(next: World): void {
 
 const hud = new Hud(hudContainer, {
   onSpeed: applySpeed,
+  onTaxRate: (rate) => {
+    currentWorld.enqueue({ kind: 'setTaxRate', rate });
+    loop.stepOnce();
+    hud.setActiveTaxRate(currentWorld.taxRate);
+  },
   onOverlay: applyOverlay,
   onTool: (toolId) => {
     activeTool = toolId as ToolId;

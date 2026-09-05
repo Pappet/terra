@@ -114,7 +114,7 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
       for (let inc = 0; inc < INCOME_LEVELS; inc++) {
         const adults =
           (vec[cohortIndex(1, e, inc)] ?? 0) + (vec[cohortIndex(2, e, inc)] ?? 0);
-        taxes += adults * FINANCE.taxPerAdultPerInterval * (FINANCE.incomeFactor[inc] ?? 1);
+        taxes += adults * FINANCE.taxPerAdultPerInterval * (FINANCE.incomeFactor[inc] ?? 1) * world.taxRate;
       }
     }
     world.treasury += taxes;
