@@ -47,39 +47,31 @@ Tasks: M5.1 Güter/Lager · M5.2 Produktion · M5.3 Preise · M5.4 Finanzen · M
 
 ## M6 – Handel (ABGESCHLOSSEN)
 
+DoD erfüllt: Güterflüsse als aggregierte Mengen pro Städtepaar und Tick; Arbitrage
+(Preisdifferenz > Transportkosten + Mindestmarge), Korridorkapazität deckelt mit
+Marge-Priorisierung (Verstopfung); Import/Export-Bilanzen (Savegame v9); Handels-Overlay;
+DoD-Test m6.proof.test.ts (Rohstoff- vs. Industriestadt, Preis-Asymmetrie hält sich, Gegenprobe ohne Korridor).
+Tasks: M6.1 Routen-Modell · M6.2 Arbitrage · M6.3 Transport/Kapazität · M6.4 Overlay+Bilanz · M6.5 Nachweis.
+
+## M7 – Verwaltung (AKTUELL)
+
 DoD:
-- Güterflüsse zwischen Städten entlang des Netzes.
-- Handel entsteht, wenn die Preisdifferenz die Transportkosten übersteigt.
-- Transportkapazität ist begrenzt, Routen können verstopfen.
-- Import/Export-Bilanz pro Stadt.
-- Flows werden aggregiert simuliert (Mengen pro Kante und Tick), nicht als Einzelfahrzeuge.
-- DoD: Eine rohstoffreiche und eine industrielle Stadt spezialisieren sich von selbst.
+- Steuersätze, Budget, Unterhaltskosten, Kredite, Bankrott.
+- Statistiken mit Zeitreihen-Graphen.
+- Vollständiges Speichern/Laden inklusive UI-Zustand.
+- DoD: Man kann eine Stadt durch schlechte Steuerpolitik ruinieren.
 
 Tasks:
-- [x] M6.1 Handels-Modell: Handelsrouten als Städtepaare (A*-Pfad, Kapazität aus Korridor), Aggregat-Flüsse (SoA)
-- [x] M6.2 Arbitrage-Logik: Handel entsteht bei Preisdifferenz > Transportkosten; Richtungsentscheidung deterministisch
-- [x] M6.3 Transport-Tick: Flüsse bewegen Güter (Lager ab/zu), Korridorkapazität deckelt, Verstopfung
-- [x] M6.4 Import/Export-Bilanz pro Stadt (im Stadt-Panel), Handels-Overlay (Flusspfeile)
-- [ ] M6.5 DoD-Nachweis: rohstoffreiche und industrielle Stadt spezialisieren sich von selbst (deterministisch)
-- [x] M5.1 Güter- und Rezept-Tabellen in /src/data (Holz, Stein, Erz, Bretter, Werkzeug, Nahrung, ...), Lagerbestände pro Stadt (SoA/Float64Array)
-- [x] M5.2 Produktions-Tick: Gebäude wandeln Inputs unter Einsatz von Arbeitskraft in Outputs, engpassgetrieben
-- [x] M5.3 Lokale Preise aus Angebot/Nachfrage (Preisanpassung pro Gut und Stadt, deterministisch)
-- [x] M5.4 Bau-/Unterhaltskosten an Wirtschaft koppeln (Kasse/Einnahmen aus Steuern vorbereiten)
-- [x] M5.5 Performance-Review: Tick-Zeit messen (512er-Karte, 10 Städte); ggf. Worker-Umzug — 0.01 ms/Tick avg, 0.77 max: kein Umzug nötig
-- [ ] M5.6 DoD-Nachweis: Vorstufen-Engpass schlägt auf nachgelagerte Produktion durch (deterministisch)
+- [x] M7.1 Steuersatz-Steuerung (setTaxRate-Action, HUD-Buttons 0–100 %), Einnahmen reagieren — Savegame v10
+- [x] M7.2 Budget-Panel: Einnahmen/Ausgaben-Aufstellung (Steuern, Unterhalt, Netto/Tick, Schulden)
+- [x] M7.3 Kredite: takeLoan/repayLoan, Zins kapitalisiert, Kreditlimit maxDebtPerAdult × Erwachsene
+- [x] M7.4 Bankrott: Kasse < −100 → bankrupt blockiert Bau/Zonen; Erholung ab Kasse ≥ 0 — Savegame v11
+- [x] M7.5 Statistiken: Zeitreihen (Kasse, Einwohner, Zufriedenheit) als Canvas-Liniendiagramm (Taste S) — Savegame v12
+- [~] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay; taxRate ist bereits im Savegame)
+- [~] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (deterministisch; Hebel: taxBurdenOnSatisfaction → Wegzug → Kollaps)
 
-## M6 – Handel (nächster Meilenstein, noch nicht zerlegt)
+## M8 – Tiefe (nächster Meilenstein, noch nicht zerlegt)
 
-DoD: Güterflüsse zwischen Städten entlang des Netzes; Handel entsteht, wenn die
-Preisdifferenz die Transportkosten übersteigt; Transportkapazität begrenzt, Routen
-können verstopfen; Import/Export-Bilanz pro Stadt; DoD: rohstoffreiche und
-industrielle Stadt spezialisieren sich von selbst.
-
-## M4 – Menschen (nächster Meilenstein, noch nicht zerlegt)
-
-DoD: Bevölkerung als Kohorten (Alter, Bildung, Einkommen), Arbeitsplätze, Zuweisung
-Wohnort→Arbeitsplatz über den Graphen, Reisezeit/Stau wirken zurück; Zufriedenheit,
-Zuzug/Wegzug; Pendeln über Stadtgrenzen hinweg sichtbar und reaktiv.
-
-## M9 – Menschen (nächster Meilenstein, noch nicht zerlegt)
-Nach Abschluss von M8 folgt M9 aus dieser Datei (specs/M9-KONSOLIDIERUNG.md).
+DoD: Strom- und Wassernetz, Verschmutzung und Umwelt, Bildung, Migration zwischen
+Städten, Ereignisse/Katastrophen, Bodenwert. Jedes Subsystem hat mindestens eine
+Rückkopplung in ein anderes.
