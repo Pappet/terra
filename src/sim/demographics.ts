@@ -54,6 +54,29 @@ export function computeMaxDebt(world: World): number {
   return adults * FINANCE.maxDebtPerAdult;
 }
 
+/**
+ * Erwartete Steuereinnahmen pro Intervall über alle Städte (M7.2, UI-Budget).
+ * Spiegelt die Formel im Intervall-Tick wider.
+ */
+export function computeTaxIncome(world: World): number {
+  let taxes = 0;
+  for (let cityId = 1; cityId <= world.cities.count; cityId++) {
+    const vec = world.population.city(cityId);
+    if (vec === null) continue;
+    for (let e = 0; e < EDUCATION_LEVELS; e++) {
+      for (let inc = 0; inc < INCOME_LEVELS; inc++) {
+        const adults = (vec[cohortIndex(1, e, inc)] ?? 0) + (vec[cohortIndex(2, e, inc)] ?? 0);
+        taxes +=
+          adults *
+          FINANCE.taxPerAdultPerInterval *
+          (FINANCE.incomeFactor[inc] ?? 1) *
+          world.taxRate;
+      }
+    }
+  }
+  return taxes;
+}
+
 /** Wohnkapazität einer Stadt (Häuser × Bewohner pro Haus). */
 export function housingCapacity(world: World, cityId: number): number {
   return housesOf(world, cityId) * GROWTH.residentsPerHouse;

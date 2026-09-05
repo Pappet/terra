@@ -1,5 +1,10 @@
 # JOURNAL
 
+## 2026-03-05 – M7.2 Budget-Panel
+**Gebaut:** `computeTaxIncome` (erwartete Steuern pro Intervall, spiegelt die Intervall-Formel), Budget-Panel links: Kasse (+BANKROTT-Flag), Steuern/Intervall, Unterhalt/Tick (Straßen/Gebäude getrennt), Netto/Tick, Schulden. Aktualisierung im 4×/s-UI-Zyklus.
+**Entscheidungen:** Panel liest die Steuerformel über die exportierte Funktion statt den letzten Intervallwert zu cachen — immer aktuell, auch bei Steuersatzwechsel mitten im Intervall.
+**Offen:** M7.5 Statistiken, M7.6 UI-State-Save, M7.7 Ruin-Nachweis.
+
 ## 2026-03-05 – M7.3/M7.4 Kredite + Bankrott
 **Gebaut:** `takeLoan`/`repayLoan`-Actions (Kreditlimit = maxDebtPerAdult × Erwachsene, Tilgung pay = min(Betrag, Schuld, Kasse)), Zins kapitalisiert pro Intervall (5 %), Bankrott-Prüfung in **jeden** update() (Kasse < −100 → bankrupt: kein Bau/Zonen; Erholung ab Kasse ≥ 0), `computeMaxDebt` läuft in jeden update (Actions brauchen das Limit sofort, nicht erst zum Intervall), Steuerlast senkt Zufriedenheit (−taxBurden 0.3 bei Volllast) — der M7.7-Ruin-Hebel. Tests isoliert (Berater-Hinweis): taxRate 0, keine Gebäude/Straßen → treasury = f(Kredite) exakt; Limit- und Tilgungsfälle separat. 218 Tests grün.
 **Entscheidungen + Lehren:**

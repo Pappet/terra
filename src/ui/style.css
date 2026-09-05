@@ -70,6 +70,13 @@ body {
   cursor: default;
 }
 
+#hud .budget-panel {
+  position: fixed;
+  top: 96px;
+  left: 8px;
+  max-width: 480px;
+}
+
 #hud .city-row {
   padding: 2px 0;
   cursor: pointer;

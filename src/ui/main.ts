@@ -10,7 +10,7 @@ import { Minimap } from '../render/minimap';
 import { Renderer } from '../render/renderer';
 import { SimLoop } from '../sim/loop';
 import { computeDemand, computeStats } from '../sim/demand';
-import { computeSatisfaction } from '../sim/demographics';
+import { computeSatisfaction, computeTaxIncome } from '../sim/demographics';
 import { exportBalance, importBalance } from '../sim/trade';
 import { World } from '../sim/world';
 import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '../persist/save';
@@ -229,6 +229,14 @@ function updateCityPanel(): void {
       factories: stats.factories,
     });
   }
+  hud.updateBudget({
+    treasury: currentWorld.treasury,
+    taxIncome: computeTaxIncome(currentWorld),
+    roadUpkeep: currentWorld.upkeepPerTick,
+    buildingUpkeep: currentWorld.buildings.count * 0.01,
+    debt: currentWorld.debt,
+    bankrupt: currentWorld.bankrupt,
+  });
   hud.updateCities(entries, (cityId) => {
     camera.x = currentWorld.cities.x[cityId - 1] ?? camera.x;
     camera.y = currentWorld.cities.y[cityId - 1] ?? camera.y;

@@ -50,6 +50,7 @@ export class Hud {
   private readonly zoneRow: HTMLDivElement;
   private readonly taxButtons = new Map<number, HTMLButtonElement>();
   private cityPanel: HTMLDivElement | null = null;
+  private budgetEl: HTMLDivElement | null = null;
   private cityListEl: HTMLDivElement | null = null;
   private readonly fileInput: HTMLInputElement;
   private flashTimer: number | undefined;
@@ -186,6 +187,38 @@ export class Hud {
    * Stadt-Panel (links): Liste aller Städte mit Bevölkerung/Zonen/Gebäuden.
    * Klick auf eine Stadt -> onJump(cityId).
    */
+  /**
+   * Budget-Panel (links, unter den Städten): Kasse, Einnahmen pro Intervall,
+   * Ausgaben pro Tick (Straßen + Gebäude), Netto und Schulden.
+   */
+  updateBudget(entry: {
+    treasury: number;
+    taxIncome: number;
+    roadUpkeep: number;
+    buildingUpkeep: number;
+    debt: number;
+    bankrupt: boolean;
+  }): void {
+    if (this.budgetEl === null) {
+      this.budgetEl = document.createElement('div');
+      this.budgetEl.className = 'panel budget-panel';
+      document.body.append(this.budgetEl);
+    }
+    const netPerTick = entry.taxIncome / 200 - entry.roadUpkeep - entry.buildingUpkeep;
+    this.budgetEl.textContent =
+      `BUDGET  Kasse ${Math.floor(entry.treasury)}` +
+      (entry.bankrupt ? ' [BANKROTT]' : '') +
+      `
+Steuern: ${entry.taxIncome.toFixed(1)}/Intervall` +
+      `
+Unterhalt: ${(entry.roadUpkeep + entry.buildingUpkeep).toFixed(2)}/Tick` +
+      ` (Str ${entry.roadUpkeep.toFixed(2)} + Bld ${entry.buildingUpkeep.toFixed(2)})` +
+      `
+Netto: ${netPerTick >= 0 ? '+' : ''}${netPerTick.toFixed(2)}/Tick` +
+      (entry.debt > 0 ? `
+Schulden: ${Math.round(entry.debt)}` : '');
+  }
+
   updateCities(
     entries: ReadonlyArray<{
       id: number;
