@@ -8,7 +8,7 @@ export class StatsPanel {
   private readonly ctx: CanvasRenderingContext2D;
   private visible = false;
 
-  constructor() {
+  constructor(parent: HTMLElement = document.body) {
     this.panel = document.createElement('div');
     this.panel.className = 'panel stats-panel';
     this.panel.style.display = 'none';
@@ -19,7 +19,7 @@ export class StatsPanel {
     if (ctx === null) throw new Error('Stats-Kontext nicht verfügbar');
     this.ctx = ctx;
     this.panel.append(this.canvas);
-    document.body.append(this.panel);
+    parent.append(this.panel);
   }
 
   toggle(): void {

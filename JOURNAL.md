@@ -387,3 +387,10 @@ Einkommens-Mobilität, Pendler-Visualisierung, dynamische Konsumnachfrage, Ereig
 - Basis-Tickrate 20/s (in `/src/data`), max. 400 Ticks pro Frame; nach langer Pause wird die verstrichene Zeit gekappt und der Rest verworfen, statt sie nachzuholen.
 - First-Frame-Guard: der erste `update()`-Aufruf setzt nur die Zeitbasis, die Zeitspanne zwischen Loop-Konstruktion und erstem Aufruf wird verworfen (schutz vor Phantom-Bursts; in Tests via Warm-up-Call berücksichtigt).
 **Offen:** nichts.
+
+## 2026-03-05 – Bugfix UI-Bootstrap (schwarzer Canvas) + HUD-Layout
+**Gebaut:** Fix für „Karte bleibt schwarz": `renderer.setWorld(initialWorld)` wurde beim Erststart nie aufgerufen (nur in `applyLoadedWorld`) – der Renderer brach in `draw()` ohne Welt ab, nur die Minimap zeigte die Karte. Kamera startet jetzt auf der Kartenmitte (x/y ist Sichtfeld-Zentrum, vorher (0,0) = Kartenecke). HUD-Layout: linke Spalte (Status, Statistik `S`, Budget, Städte) und rechte Spalte (Speed, Steuersatz, Minimap) als Flex-Stacks – das Tax-Panel mit Inline-`top:48px` kollidierte mit der Minimap (ebenfalls `top:48 right:8`), Budget/City/Stats-Panels überlappten sich per fixer Tops, die Statuszeile lief ohne Max-Width ins Overlay-Menü (jetzt `pre-wrap` + `max-width`), Overlay-Leiste bricht mit `flex-wrap` um. Minimap-Sichtfeldrechteck nutzt jetzt `camera.viewSize` (vorher fälschlich die eigene Canvas-Grösse). Initial-Tool in main.ts auf `found` vereinheitlicht (HUD zeigte `found`, main malte mit `road` – daher die leere Werkzeugpalette unten links).
+**Entscheidungen:**
+- Kein DOM-Framework: weiter reines DOM, Struktur über zwei Stack-Container in `Hud` (`leftSlot`/`rightSlot`), Minimap/Stats hängen main-seitig an die Slots.
+- Nur UI/Render-Bootstrap angefasst – Sim, Golden Master und Savegame-Format unberührt.
+**Offen:** nichts.

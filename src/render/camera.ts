@@ -32,6 +32,11 @@ export class Camera {
     this.viewportH = h;
   }
 
+  /** Aktuelle Viewport-Grösse in CSS-Pixeln (0/0 vor dem ersten draw). */
+  get viewSize(): { width: number; height: number } {
+    return { width: this.viewportW, height: this.viewportH };
+  }
+
   panByPixels(dxPx: number, dyPx: number): void {
     this.x -= dxPx / this.zoom;
     this.y -= dyPx / this.zoom;

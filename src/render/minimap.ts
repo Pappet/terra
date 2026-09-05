@@ -54,11 +54,13 @@ export class Minimap {
     ctx.clearRect(0, 0, this.sizePx, this.sizePx);
     ctx.drawImage(this.mapCanvas, 0, 0, this.sizePx, this.sizePx);
 
-    // Sichtfeld-Rechteck
+    // Sichtfeld-Rechteck (Grösse des Haupt-Viewports, nicht der Minimap)
     const sx = this.sizePx / world.width;
     const sy = this.sizePx / world.height;
+    const view = camera.viewSize;
+    if (view.width <= 0 || view.height <= 0) return;
     const topLeft = camera.screenToWorld(0, 0);
-    const bottomRight = camera.screenToWorld(this.canvas.clientWidth, this.canvas.clientHeight);
+    const bottomRight = camera.screenToWorld(view.width, view.height);
     const rx = topLeft.x * sx;
     const ry = topLeft.y * sy;
     const rw = (bottomRight.x - topLeft.x) * sx;

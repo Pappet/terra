@@ -49,6 +49,8 @@ export class Hud {
   private readonly paintRow: HTMLDivElement;
   private readonly zoneRow: HTMLDivElement;
   private readonly taxButtons = new Map<number, HTMLButtonElement>();
+  private readonly leftStack: HTMLDivElement;
+  private readonly rightStack: HTMLDivElement;
   private cityPanel: HTMLDivElement | null = null;
   private budgetEl: HTMLDivElement | null = null;
   private cityListEl: HTMLDivElement | null = null;
@@ -56,17 +58,26 @@ export class Hud {
   private flashTimer: number | undefined;
 
   constructor(container: HTMLElement, callbacks: HudCallbacks) {
+    // Linke Spalte: Statuszeile, später Statistik/Budget/Städte (siehe Slots).
+    this.leftStack = document.createElement('div');
+    this.leftStack.className = 'left-stack';
+
+    // Rechte Spalte: Geschwindigkeit, Steuersatz, Minimap (main hängt sie an).
+    this.rightStack = document.createElement('div');
+    this.rightStack.className = 'right-stack';
+
     // Statuszeile oben links
     const statusPanel = document.createElement('div');
-    statusPanel.className = 'panel top-left';
+    statusPanel.className = 'panel status-panel';
     this.info = document.createElement('div');
     this.flashEl = document.createElement('div');
     this.flashEl.className = 'flash';
     statusPanel.append(this.info, this.flashEl);
+    this.leftStack.append(statusPanel);
 
     // Geschwindigkeit oben rechts
     const speedPanel = document.createElement('div');
-    speedPanel.className = 'panel top-right';
+    speedPanel.className = 'panel';
     for (const [label, speed] of [
       ['⏸', 0],
       ['1x', 1],
@@ -81,6 +92,7 @@ export class Hud {
       this.speedButtons.set(speed, b);
       speedPanel.append(b);
     }
+    this.rightStack.append(speedPanel);
 
     // Werkzeuge unten mittig; Kontextzeile (Palette/Strassentypen) unten links
     const toolPanel = document.createElement('div');
@@ -122,10 +134,9 @@ export class Hud {
     }
     paintPanel.append(this.zoneRow, this.roadRow, this.paintRow);
 
-    // Steuersatz: eigene Zeile oben unter den Speed-Buttons
+    // Steuersatz: eigene Zeile in der rechten Spalte (über der Minimap)
     const taxPanel = document.createElement('div');
-    taxPanel.className = 'panel top-right';
-    taxPanel.style.top = '48px';
+    taxPanel.className = 'panel';
     taxPanel.append(hudLabel('Steuern:'));
     for (const rate of [0, 0.25, 0.5, 0.75, 1] as const) {
       const b = button(
@@ -136,6 +147,7 @@ export class Hud {
       this.taxButtons.set(rate, b);
       taxPanel.append(b);
     }
+    this.rightStack.append(taxPanel);
 
     // Overlay-Umschalter oben mittig
     const overlayPanel = document.createElement('div');
@@ -167,7 +179,7 @@ export class Hud {
       this.fileInput,
     );
 
-    container.append(statusPanel, speedPanel, taxPanel, overlayPanel, toolPanel, paintPanel, savePanel);
+    container.append(this.leftStack, this.rightStack, overlayPanel, toolPanel, paintPanel, savePanel);
     this.setActiveSpeed(1);
     this.setActivePaintTile(1);
     this.setActiveOverlay('surface');
@@ -175,6 +187,16 @@ export class Hud {
     this.setActiveRoadType(2);
     this.setActiveZoneType(1);
     this.setActiveTaxRate(1);
+  }
+
+  /** Anhang links unter der Statuszeile (Statistik-/Budget-/Städte-Panels). */
+  get leftSlot(): HTMLElement {
+    return this.leftStack;
+  }
+
+  /** Anhang rechts unter Steuerzeile (Minimap). */
+  get rightSlot(): HTMLElement {
+    return this.rightStack;
   }
 
   setActiveTaxRate(rate: number): void {
@@ -202,7 +224,7 @@ export class Hud {
     if (this.budgetEl === null) {
       this.budgetEl = document.createElement('div');
       this.budgetEl.className = 'panel budget-panel';
-      document.body.append(this.budgetEl);
+      this.leftStack.append(this.budgetEl);
     }
     const netPerTick = entry.taxIncome / 200 - entry.roadUpkeep - entry.buildingUpkeep;
     this.budgetEl.textContent =
@@ -242,7 +264,7 @@ Schulden: ${Math.round(entry.debt)}` : '');
       this.cityPanel.className = 'panel city-panel';
       this.cityListEl = document.createElement('div');
       this.cityPanel.append(this.cityListEl);
-      document.body.append(this.cityPanel);
+      this.leftStack.append(this.cityPanel);
     }
     const el = this.cityListEl as HTMLDivElement;
     if (entries.length === 0) {

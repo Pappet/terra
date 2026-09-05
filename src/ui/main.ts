@@ -36,39 +36,20 @@ const initialWorld = new World(seedFromUrl(), SIM_CONFIG.map.width, SIM_CONFIG.m
 let currentWorld: World = initialWorld;
 const loop = new SimLoop(initialWorld, { now: () => performance.now() });
 const camera = new Camera();
+// Sichtfeld auf die Kartenmitte richten (x/y ist die Position des Zentrums).
+camera.x = initialWorld.width / 2;
+camera.y = initialWorld.height / 2;
 const renderer = new Renderer(canvas);
-const minimap = new Minimap(document.body);
-const statsPanel = new StatsPanel();
-window.addEventListener('keydown', (ev) => {
-  if (ev.key === 's' || ev.key === 'S') statsPanel.toggle();
-});
-minimap.setWorld(initialWorld);
+// WICHTIG: Der Renderer braucht die Welt auch beim Erststart – sonst bleibt
+// der Canvas schwarz (draw() bricht ohne Welt ab).
+renderer.setWorld(initialWorld);
 
 let activePaintTile = 1;
 let activeOverlay = 'surface';
-let activeTool: ToolId = 'road';
+let activeTool: ToolId = 'found';
 let activeRoadType = 2;
 let activeZone = 1;
 let routeFrom: number | null = null;
-
-// Minimap: Klick/Drag zentriert die Kamera
-let minimapDragging = false;
-function jumpTo(ev: MouseEvent): void {
-  const pos = minimap.screenToWorld(ev.clientX, ev.clientY);
-  camera.x = pos.x;
-  camera.y = pos.y;
-  camera.clampToMap(currentWorld.width, currentWorld.height);
-}
-minimap.canvas.addEventListener('mousedown', (ev) => {
-  minimapDragging = true;
-  jumpTo(ev);
-});
-window.addEventListener('mousemove', (ev) => {
-  if (minimapDragging) jumpTo(ev);
-});
-window.addEventListener('mouseup', () => {
-  minimapDragging = false;
-});
 
 function cycleOverlay(): void {
   const idx = OVERLAYS.findIndex((o) => o.id === activeOverlay);
@@ -157,6 +138,36 @@ const hud = new Hud(hudContainer, {
       .catch((err: unknown) => hud.flash(`Import fehlgeschlagen: ${String(err)}`));
   },
 });
+
+// Minimap + Statistik in die HUD-Spalten (rechts bzw. links) einsortieren.
+const minimap = new Minimap(hud.rightSlot);
+minimap.setWorld(initialWorld);
+const statsPanel = new StatsPanel(hud.leftSlot);
+window.addEventListener('keydown', (ev) => {
+  if (ev.key === 's' || ev.key === 'S') statsPanel.toggle();
+});
+
+// Minimap: Klick/Drag zentriert die Kamera
+let minimapDragging = false;
+function jumpTo(ev: MouseEvent): void {
+  const pos = minimap.screenToWorld(ev.clientX, ev.clientY);
+  camera.x = pos.x;
+  camera.y = pos.y;
+  camera.clampToMap(currentWorld.width, currentWorld.height);
+}
+minimap.canvas.addEventListener('mousedown', (ev) => {
+  minimapDragging = true;
+  jumpTo(ev);
+});
+window.addEventListener('mousemove', (ev) => {
+  if (minimapDragging) jumpTo(ev);
+});
+window.addEventListener('mouseup', () => {
+  minimapDragging = false;
+});
+
+// Werkzeug-Zeile im HUD mit dem Initial-Tool synchronisieren.
+hud.setActiveTool(activeTool);
 
 const input = attachInput(canvas, {
   camera,
