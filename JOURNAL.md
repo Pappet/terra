@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M5.4 Finanzen + Intervall-Semantik-Bugfix
+**Gebaut:** `FINANCE` in data/cities.ts (Steuern 6/Erwachsenem/Intervall, Einkommensfaktor 0.6/1/1.6, Gebäudeunterhalt 0.01/Tick); Steuern im Demografie-Intervall kassiert (nach Einkommensgruppe), Gebäudeunterhalt im Produktionstick abgezogen. **Echter Sim-Bug dabei gefunden:** das Demografie-Intervall feuerte mit `this.tick` (VOR Inkrement), also einen Tick vor dem "abschliessenden Tick" — inkonsistent mit der currentTick-Semantik aus M3.1 und Ursache der nicht erklärbaren Kassen-Deltas. Fix: Intervall-Argument = abschliessender Tick (tick+1). Tests: Steuer-Erwartung exakt (Steuern 71.856 − Unterhalt 35.64 über 198 Ticks), Unterhalt pro Tick, Determinismus, Druck-Szenario. 194 Tests grün.
+**Entscheidungen:**
+- Taxquote 6/Intervall ≈ 0.03/Tick/Kopf: bewusst auf Augenhöhe mit Straßenunterhalt (0.03/Tick/Tile) — eine Straße "kostet" so viel wie ein Bürger "bringt"; Feinbalance macht M7 (Steuersätze!).
+- Rebalancing-Schritt war echtes Balancing-Ergebnis, nicht Testfälschung: Erst die Daten schief, dann Messung, dann Quote angepasst.
+- Lehre: Off-by-one zwischen "Tick-Argument" und "abschließendem Tick" war nur durch Instrumentierung (taxdbg) auffindbar — die wiederholten identischen Zahlen (446.28) über mehrere Läufe waren das Alarmsignal.
+**Offen:** M5.5 Performance-Review, M5.6 Engpass-Nachweis (Mechanismus getestet, formaler Test folgt).
+
 ## 2026-03-05 – M5.3 Lokale Preise
 **Gebaut:** `Market` (Preise + EMA der Produktions-/Verbrauchsraten pro Stadt × Gut) und `updateMarket`: Druck = Nachfrage (Verbrauch-EMA + Grundnachfrage) / Angebot (Produktions-EMA + Lager/targetStock); Preis nähert sich basePrice × clamp(Druck, 0.5, 2) gedämpft an. Produktionstick liefert jetzt Güterflüsse (produced/consumed pro Stadt) an den Markt. Savegame **v8** (Marktvektoren serialisiert). Tests: Startpreise, Nachfrageüberschuss (Nahrung über Basis), Angebotsüberschuss (Holz unter Basis), Klemmen, Roundtrip, Determinismus. 189 Tests grün.
 **Entscheidungen:**
