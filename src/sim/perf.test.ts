@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { World } from './world';
 import { cohortIndex } from './population';
-import { GROWTH } from '../data/cities';
+import { CITIES } from '../data/cities';
 
 /**
  * M5.5 Performance-Review: 512er-Karte, 10 Städte mit Gebäuden, Straßen,
@@ -19,7 +19,7 @@ describe('M5.5 Performance', () => {
       const y = Math.floor(idx / w.width);
       let far = true;
       for (const s of spots) {
-        if (Math.hypot(s.x - x, s.y - y) < GROWTH.maxZoneDistance) {
+        if (Math.hypot(s.x - x, s.y - y) < CITIES.maxZoneDistance) {
           far = false;
           break;
         }
