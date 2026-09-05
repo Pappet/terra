@@ -6,35 +6,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import { World } from './world';
-import { Buildings } from './buildings';
-import { Cities } from './cities';
-import { Population, cohortIndex } from './population';
-import { PathFinder } from './pathfinding';
+import { lineWorld as makeLineWorld } from '../../tests/fakes';
+import { cohortIndex } from './population';
 import { assignWorkers } from './employment';
 
-/** 1-Zeilen-Welt: A(0) - B(5) - C(9), Strassentyp parametrierbar. */
 function lineWorld(roadType: number): World {
-  const cells = 'A....B....C';
-  const width = cells.length;
-  const water = new Uint8Array(width);
-  const roads = new Uint8Array(width);
-  const tiles = new Uint8Array(width).fill(1);
-  for (let i = 0; i < width; i++) {
-    if (roadType > 0 && cells[i] !== undefined) roads[i] = roadType;
-  }
-  return {
-    width,
-    height: 1,
-    tiles,
-    water,
-    roads,
-    layers: { water },
-    cities: new Cities(),
-    buildings: new Buildings(),
-    population: new Population(),
-    pathfinder: new PathFinder(),
-    tileRev: 0,
-  } as unknown as World;
+  return makeLineWorld({ width: 11, roadType });
 }
 
 function addAdults(w: World, cityId: number, count: number): void {

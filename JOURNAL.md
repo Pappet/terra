@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M5.6 DoD-Nachweis + M5-Abschluss
+**Gebaut:** m5.proof.test.ts auf deterministischer lineWorld (Fake-Welt mit schlanker update-Pipeline: Zuweisung + Produktion): Kette Holzfäller→Sägewerk→Werkstatt; Ausfall des Holzfällers → Restholz läuft leer → Sägewerk still → Werkstatt kaskadiert nach (Produktionsraten vor/nach verglichen, Erz reicht reichlich). 197 Tests grün, Build grün. **M5 ist damit fertig.**
+**Entscheidungen:**
+- lineWorld-Fake statt generierter Karte (Lektion aus M4 befolgt: keine Wasser-Roulette-Geographie in Kettentests); der Fake implementiert nur update/removeBuildingAt — die vollständige update()-Verkabelung ist durch die realen World-Tests abgedeckt.
+- wood-Check `< 2` statt `=== 0`: take() kann den Bestand nie unter den Sägewerk-Bedarf senken, der Rest bleibt liegen — semantisch korrekter Engpass-Nachweis.
+- Redaktionsunfälle (doppelte Deklaration, unreachable Code) kosteten mehrere Iterationen: künftig solche Umbauten in einem Schritt mit write statt mehrfachen python-Patches.
+**Offen:** M6 (Handel) — Zerlegung folgt.
+
 ## 2026-03-05 – M5.5 Performance-Review
 **Gebaut:** perf.test.ts mit realistischer Last: 512er-Karte, 10 Städte (Gründung, Straßenkreuz, je 5 Gebäude mit Anschluss, 60 Einwohner). Messung über 250 Ticks inkl. mindestens einem Demografie-/Migrations-/Zuweisungs-Intervall: **0.010 ms/Tick Durchschnitt, 0.766 ms teuerster Einzeltick** gegen Budget 16 ms. 
 **Entscheidungen:**

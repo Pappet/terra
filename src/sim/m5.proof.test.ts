@@ -10,56 +10,15 @@
  */
 import { describe, expect, it } from 'vitest';
 import { World } from './world';
-import { Buildings } from './buildings';
-import { Cities } from './cities';
-import { Market } from './market';
-import { PathFinder } from './pathfinding';
-import { Population, cohortIndex } from './population';
-import { Storage } from './storage';
-import { assignWorkers } from './employment';
-import { runProductionTick } from './production';
+import { lineWorld as makeLineWorld } from '../../tests/fakes';
+import { cohortIndex } from './population';
 
 function chainWorld(): World {
-  const width = 9;
-  const world = {
-    width,
-    height: 1,
-    tiles: new Uint8Array(width).fill(1),
-    water: new Uint8Array(width),
-    roads: new Uint8Array(width).fill(2), // überall Strasse (Kapazität egal, Stadt intern)
-    layers: { water: new Uint8Array(width) },
-    cities: new Cities(),
-    buildings: new Buildings(),
-    population: new Population(),
-    storage: new Storage(),
-    market: new Market(),
-    buildingIndex: new Int32Array(width),
-    treasury: 500,
-    pathfinder: new PathFinder(),
-    tileRev: 0,
-  } as unknown as World;
-
-  (world as { update: () => void }).update = () => {
-    world.commute = assignWorkers(world);
-    runProductionTick(world);
-  };
-  // removeBuildingAt (Swap + Tile-Index-Pflege), wie World es macht
-  (world as unknown as {
-    removeBuildingAt: (index: number) => void;
-  }).removeBuildingAt = (index: number) => {
-    const b = world.buildings;
-    const lastId = b.count;
-    const rx = b.x[index] as number;
-    const ry = b.y[index] as number;
-    world.buildingIndex[ry * width + rx] = 0;
-    if (index !== lastId - 1) {
-      const mx = b.x[lastId - 1] as number;
-      const my = b.y[lastId - 1] as number;
-      world.buildingIndex[my * width + mx] = index + 1;
-    }
-    b.removeAt(index);
-  };
-  return world;
+  const w = makeLineWorld({ width: 9, roadType: 2, production: true });
+  w.cities.found('Kette', 0, 0, 0);
+  w.population.ensureCity(1);
+  w.storage.add(1, 3, 500);
+  return w;
 }
 
 describe('M5-DoD: Engpass schlägt nachgelagert durch', () => {

@@ -37,16 +37,30 @@ m4.proof.test.ts (geteilter Arbeitsmarkt, Reaktivität auf Strassenausbau).
 Tasks: M4.1 Kohorten · M4.2 Dynamik · M4.3 Jobs/Zuweisung · M4.4 Korridore ·
 M4.5 Zufriedenheit/Migration · M4.6 Overlay · M4.7 Nachweis.
 
-## M5 – Wirtschaft (AKTUELL)
+## M5 – Wirtschaft (ABGESCHLOSSEN)
+
+DoD erfüllt: Produktionsketten (Holz→Bretter→Werkzeug, Rezeptauswahl D006 nach Umgebung+Kettenausgleich),
+Lagerbestände pro Stadt, lokale Preise aus Angebot/Nachfrage (geklemmt, deterministisch), Arbeitskraft als Input,
+Performance-Review: 0.01 ms/Tick avg / 0.77 ms max bei 512er+10 Städten — kein Worker-Umzug nötig;
+DoD-Test m5.proof.test.ts (Engpass-Kaskade über zwei Stufen).
+Tasks: M5.1 Güter/Lager · M5.2 Produktion · M5.3 Preise · M5.4 Finanzen · M5.5 Performance · M5.6 Nachweis.
+
+## M6 – Handel (AKTUELL)
 
 DoD:
-- Produktionsketten (Rohstoff → Zwischengut → Konsumgut).
-- Lagerbestände, lokale Preise aus Angebot und Nachfrage.
-- Arbeitskraft als Input.
-- Performance-Review: falls der Tick das Budget (16 ms) reisst, jetzt in den Web Worker umziehen.
-- DoD: Ein Engpass in einer Vorstufe schlägt messbar auf die nachgelagerte Produktion durch.
+- Güterflüsse zwischen Städten entlang des Netzes.
+- Handel entsteht, wenn die Preisdifferenz die Transportkosten übersteigt.
+- Transportkapazität ist begrenzt, Routen können verstopfen.
+- Import/Export-Bilanz pro Stadt.
+- Flows werden aggregiert simuliert (Mengen pro Kante und Tick), nicht als Einzelfahrzeuge.
+- DoD: Eine rohstoffreiche und eine industrielle Stadt spezialisieren sich von selbst.
 
 Tasks:
+- [~] M6.1 Handels-Modell: Handelsrouten als Städtepaare (A*-Pfad, Kapazität aus Korridor), Aggregat-Flüsse (SoA)
+- [ ] M6.2 Arbitrage-Logik: Handel entsteht bei Preisdifferenz > Transportkosten; Richtungsentscheidung deterministisch
+- [ ] M6.3 Transport-Tick: Flüsse bewegen Güter (Lager ab/zu), Korridorkapazität deckelt, Verstopfung
+- [ ] M6.4 Import/Export-Bilanz pro Stadt (im Stadt-Panel), Handels-Overlay (Flusspfeile)
+- [ ] M6.5 DoD-Nachweis: rohstoffreiche und industrielle Stadt spezialisieren sich von selbst (deterministisch)
 - [x] M5.1 Güter- und Rezept-Tabellen in /src/data (Holz, Stein, Erz, Bretter, Werkzeug, Nahrung, ...), Lagerbestände pro Stadt (SoA/Float64Array)
 - [x] M5.2 Produktions-Tick: Gebäude wandeln Inputs unter Einsatz von Arbeitskraft in Outputs, engpassgetrieben
 - [x] M5.3 Lokale Preise aus Angebot/Nachfrage (Preisanpassung pro Gut und Stadt, deterministisch)
