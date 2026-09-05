@@ -54,6 +54,7 @@ describe('M4.2 Demografie', () => {
     const w = cityWithHouse();
     w.population.add(1, cohortIndex(1, 1, 0), 10);
     const before = w.population.total(1);
+    w.taxRate = 0; // reine Alterung: kein Wegzug über die Steuerlast
     runDemographicsTick(w, new Rng(1), AGE_TICK_INTERVAL);
     // Gruppe 1 -> 2 (mit Sterblichkeit), Bildung wandert mit Wahrscheinlichkeit
     const vec = w.population.city(1)!;

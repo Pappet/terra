@@ -49,6 +49,8 @@ export interface SerializedWorld {
   height: number;
   treasury: number;
   taxRate: number;
+  debt: number;
+  bankrupt: boolean;
   tiles: string;
   roads: string;
   cities: ReturnType<Cities['serialize']>;
@@ -108,6 +110,12 @@ export class World {
   treasury: number = SIM_CONFIG.startingTreasury;
   /** Globaler Steuersatz (0..1), über setTaxRate-Action geändert. */
   taxRate = 1;
+  /** Restschuld aus Krediten (M7.3). */
+  debt = 0;
+  /** Kreditlimit: maxDebtPerAdult × Erwachsene (im Intervall aktualisiert). */
+  maxDebt = 0;
+  /** Bankrott-Flag (M7.4): blockiert Bau-Aktionen. */
+  bankrupt = false;
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
   lastRejected: string | null = null;
   /** Angezeigte Route (Snapshot bei Anfragezeit, rev = tileRev dann). Transient, nicht im Savegame. */
@@ -321,6 +329,9 @@ export class World {
       rev: this.tileRev,
       treasury: this.treasury,
       taxRate: this.taxRate,
+      debt: this.debt,
+      maxDebt: this.maxDebt,
+      bankrupt: this.bankrupt,
       lastRejected: this.lastRejected,
       routeRequest: this.routeRequest,
     };
@@ -353,6 +364,8 @@ export class World {
       height: this.height,
       treasury: this.treasury,
       taxRate: this.taxRate,
+      debt: this.debt,
+      bankrupt: this.bankrupt,
       tiles: bytesToBase64(this.tiles),
       roads: bytesToBase64(this.roads),
       cities: this.cities.serialize(),
@@ -442,6 +455,15 @@ export class World {
       throw new Error(`Savegame: taxRate ungültig: ${String(taxRate)}`);
     }
     world.taxRate = taxRate;
+    const debt = d.debt;
+    if (typeof debt !== 'number' || !Number.isFinite(debt) || debt < 0) {
+      throw new Error(`Savegame: debt ungültig: ${String(debt)}`);
+    }
+    world.debt = debt;
+    if (d.bankrupt !== true && d.bankrupt !== false) {
+      throw new Error('Savegame: bankrupt fehlt oder ist kein Boolean');
+    }
+    world.bankrupt = d.bankrupt as boolean;
 
     if (typeof d.layers !== 'object' || d.layers === null) {
       throw new Error('Savegame: layers fehlt');
@@ -475,7 +497,7 @@ export class World {
 export function equalWorlds(a: World, b: World): boolean {
   if (
     a.seed !== b.seed || a.width !== b.width || a.height !== b.height ||
-    a.tick !== b.tick || a.treasury !== b.treasury || a.taxRate !== b.taxRate || a.rngStateU32 !== b.rngStateU32
+    a.tick !== b.tick || a.treasury !== b.treasury || a.taxRate !== b.taxRate || a.debt !== b.debt || a.bankrupt !== b.bankrupt || a.rngStateU32 !== b.rngStateU32
   ) {
     return false;
   }

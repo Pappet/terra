@@ -29,6 +29,14 @@ export const FINANCE = {
   incomeFactor: [0.6, 1.0, 1.6],
   /** Unterhalt pro Gebäude und Tick. */
   buildingUpkeepPerTick: 0.01,
+  /** Kreditzinsen pro Intervall (Anteil der Restschuld). */
+  loanInterestPerInterval: 0.05,
+  /** Max. Schulden pro Erwachsenem (Kreditlimit). */
+  maxDebtPerAdult: 20,
+  /** Kasse unter diesem Wert -> Bankrott (M7.4). */
+  bankruptcyTreasuryLimit: -100,
+  /** Zufriedenheitsmalus bei Volllast-Steuersatz (M7.7-Ruin-Hebel). */
+  taxBurdenOnSatisfaction: 0.3,
 } as const;
 
 /** Gebäudetypen folgen den Zonen (1 R, 2 C, 3 I). Farben fürs Kartenbild. */

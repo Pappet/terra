@@ -34,6 +34,12 @@ export interface ActionContext {
   lastRejected: string | null;
   /** Globaler Steuersatz 0..1 (M7). */
   taxRate: number;
+  /** Restschuld (Kredite, M7.3). */
+  debt: number;
+  /** Bankrott-Flag (M7.4): kein Bau, solange gesetzt. */
+  bankrupt: boolean;
+  /** Kreditlimit (maxDebtPerAdult × Erwachsene). */
+  maxDebt: number;
   /** Vom Tick auszuwertende Routenanfrage (Route wird nach den Actions berechnet). */
   routeRequest: { from: number; to: number } | null;
 }
@@ -54,7 +60,11 @@ export type GameAction =
   /** Zone setzen (1=R, 2=C, 3=I) oder aufheben (0), nahe einer Stadt. */
   | { kind: 'paintZone'; x: number; y: number; zone: number }
   /** Globalen Steuersatz setzen (0..1, multipliziert die Steuereinnahmen). */
-  | { kind: 'setTaxRate'; rate: number };
+  | { kind: 'setTaxRate'; rate: number }
+  /** Kredit aufnehmen (Zins läuft pro Intervall). */
+  | { kind: 'takeLoan'; amount: number }
+  /** Schulden tilgen. */
+  | { kind: 'repayLoan'; amount: number };
 
 /**
  * Action anwenden. Liefert true, wenn sie ausgeführt wurde.
@@ -79,6 +89,7 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
       if (type === undefined) {
         throw new Error(`buildRoad: unbekannter Strassentyp ${road}`);
       }
+      if (ctx.bankrupt) return reject(ctx, 'Bankrott: kein Bau möglich');
       if (!inBounds(ctx, x, y)) return true;
       const idx = y * ctx.width + x;
       if ((ctx.water[idx] ?? 0) === 1) {
@@ -106,6 +117,31 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
     }
     case 'clearRoute': {
       ctx.routeRequest = { from: -1, to: -1 };
+      return true;
+    }
+    case 'takeLoan': {
+      const { amount } = action;
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+        return reject(ctx, `Ungültiger Kreditbetrag: ${String(amount)}`);
+      }
+      if (ctx.debt + amount > ctx.maxDebt) {
+        return reject(ctx, `Kreditlimit erreicht (max. Schulden ${ctx.maxDebt})`);
+      }
+      ctx.debt += amount;
+      ctx.treasury += amount;
+      return true;
+    }
+    case 'repayLoan': {
+      const { amount } = action;
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+        return reject(ctx, `Ungültiger Tilgungsbetrag: ${String(amount)}`);
+      }
+      const pay = Math.min(amount, ctx.debt, ctx.treasury);
+      if (pay <= 0) {
+        return reject(ctx, 'Keine Mittel zur Tilgung');
+      }
+      ctx.debt -= pay;
+      ctx.treasury -= pay;
       return true;
     }
     case 'setTaxRate': {
@@ -143,6 +179,7 @@ export function applyAction(ctx: ActionContext, action: GameAction): boolean {
       if ((ctx.roads[idx] ?? 0) !== 0) {
         return reject(ctx, 'Zonen unter Strassen nicht möglich');
       }
+      if (ctx.bankrupt) return reject(ctx, 'Bankrott: kein Zonen möglich');
       if ((ctx.buildingIndex[idx] ?? 0) !== 0) {
         return reject(ctx, 'Tile ist bebaut');
       }

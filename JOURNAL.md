@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M7.1 Steuersatz-Steuerung
+**Gebaut:** `setTaxRate`-Action (0..1, ungültig → lastRejected), `World.taxRate` (Savegame **v10**), Steuern in der Demografie × taxRate, HUD: Steuer-Buttons 0/25/50/75/100 % oben rechts. Tests: Satz 0 → keine Einnahmen, 0.5 → exakt halbe Brutto-Einnahmen, Ablehnung ungültiger Sätze, Roundtrip v10, Determinismus. 212 Tests grün.
+**Entscheidungen:**
+- Globaler Satz statt pro Stadt: M7-DoD ("Stadt durch Steuerpolitik ruinieren") funktioniert über den globalen Hebel; pro-Stadt-Sätze kommen mit M8 (Stadtidentität stärker differenzieren).
+- Steuersatz als Sim-Parameter über die Action-Pipeline (D003): UI setzt nichts direkt.
+**Offen:** M7.2 Budget-Panel, M7.3 Kredite, M7.4 Bankrott, M7.5 Statistiken, M7.6 UI-State-Save, M7.7 Ruin-Nachweis.
+
 ## 2026-03-05 – M6.5 DoD-Nachweis + M6-Abschluss
 **Gebaut:** m6.proof.test.ts: Holzfäller-Stadt A, Sägewerk+Werkstatt-Stadt B. Über 300 Ticks: A exportiert Holz (>5 Einheiten), B importiert es und produziert Bretter; Preis-Asymmetrie (B-Holz teurer als A-Holz) hält sich selbst; Spezialisierung strukturell geprüft (A nur Extraktionsrezepte, B nur Verarbeitungsrezepte); B's Bretter-Überschuss fließt per Arbitrage zurück nach A (Preis-Boden). Gegenprobe: Wasser trennt die Städte → keine Importe, Industrie läuft in den Engpass-Stillstand. Determinismus geprüft. 207 Tests grün, Build grün. **M6 ist damit fertig.**
 **Entscheidungen + Lehren:**
