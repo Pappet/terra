@@ -168,6 +168,23 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
 
   // 4) Migration (M4.5) läuft im selben Intervall
   runMigration(world, rng);
+
+  // 5) Zeitreihen-Sample (M7.5), max 200 Eintraege
+  let residentsTotal = 0;
+  let satisfactionSum = 0;
+  for (let cityId = 1; cityId <= world.cities.count; cityId++) {
+    residentsTotal += world.population.total(cityId);
+    satisfactionSum += computeSatisfaction(world, cityId);
+  }
+  const avgSat = world.cities.count === 0 ? 1 : satisfactionSum / world.cities.count;
+  const H = world.history;
+  H.tick.push(world.tick);
+  H.treasury.push(world.treasury);
+  H.residents.push(residentsTotal);
+  H.satisfaction.push(avgSat);
+  for (const key of ['tick', 'treasury', 'residents', 'satisfaction'] as const) {
+    if (H[key].length > 200) H[key].shift();
+  }
   return true;
 }
 

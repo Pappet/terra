@@ -52,6 +52,7 @@ export interface SerializedWorld {
   taxRate: number;
   debt: number;
   bankrupt: boolean;
+  history: { tick: number[]; treasury: number[]; residents: number[]; satisfaction: number[] };
   tiles: string;
   roads: string;
   cities: ReturnType<Cities['serialize']>;
@@ -117,6 +118,10 @@ export class World {
   maxDebt = 0;
   /** Bankrott-Flag (M7.4): blockiert Bau-Aktionen. */
   bankrupt = false;
+  /** Zeitreihen (M7.5): Sample pro Demografie-Intervall, max 200 Eintraege. */
+  history: { tick: number[]; treasury: number[]; residents: number[]; satisfaction: number[] } = {
+    tick: [], treasury: [], residents: [], satisfaction: [],
+  };
   /** Grund des zuletzt abgelehnten Action-Calls (UI-Anzeige), sonst null. */
   lastRejected: string | null = null;
   /** Angezeigte Route (Snapshot bei Anfragezeit, rev = tileRev dann). Transient, nicht im Savegame. */
@@ -374,6 +379,7 @@ export class World {
       taxRate: this.taxRate,
       debt: this.debt,
       bankrupt: this.bankrupt,
+      history: JSON.parse(JSON.stringify(this.history)),
       tiles: bytesToBase64(this.tiles),
       roads: bytesToBase64(this.roads),
       cities: this.cities.serialize(),
@@ -472,6 +478,13 @@ export class World {
       throw new Error('Savegame: bankrupt fehlt oder ist kein Boolean');
     }
     world.bankrupt = d.bankrupt as boolean;
+    const hist = d.history as { tick?: unknown; treasury?: unknown; residents?: unknown; satisfaction?: unknown } | undefined;
+    if (hist !== undefined) {
+      for (const key of ['tick', 'treasury', 'residents', 'satisfaction'] as const) {
+        const arr = hist[key];
+        if (Array.isArray(arr)) (world.history[key] as number[]) = [...(arr as number[])];
+      }
+    }
 
     if (typeof d.layers !== 'object' || d.layers === null) {
       throw new Error('Savegame: layers fehlt');

@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M7.5 Statistiken mit Zeitreihen
+**Gebaut:** `world.history` (Sample pro Demografie-Intervall: tick/treasury/residents/durchschnittliche Zufriedenheit, max 200 Einträge, Savegame **v12**) und StatsPanel (Taste S): minimales Canvas-Liniendiagramm ohne Library, zeichnet nur bei Sichtbarkeit.
+**Entscheidungen:**
+- Sampling im Demografie-Intervall (1 Sample ≈ 1 "Jahr") statt pro Tick: 200 Samples decken ~2000 s Spielzeit ab; Tick-Rauschen uninteressant.
+- Diagramm bewusst handgezeichnet auf Canvas (Guardrail: minimal halten, keine Chart-Library).
+**Offen:** M7.6 UI-State-Save, M7.7 Ruin-Nachweis.
+
 ## 2026-03-05 – M7.2 Budget-Panel
 **Gebaut:** `computeTaxIncome` (erwartete Steuern pro Intervall, spiegelt die Intervall-Formel), Budget-Panel links: Kasse (+BANKROTT-Flag), Steuern/Intervall, Unterhalt/Tick (Straßen/Gebäude getrennt), Netto/Tick, Schulden. Aktualisierung im 4×/s-UI-Zyklus.
 **Entscheidungen:** Panel liest die Steuerformel über die exportierte Funktion statt den letzten Intervallwert zu cachen — immer aktuell, auch bei Steuersatzwechsel mitten im Intervall.

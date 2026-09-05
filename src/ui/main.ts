@@ -16,6 +16,7 @@ import { World } from '../sim/world';
 import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '../persist/save';
 import { Hud } from './hud';
 import { attachInput } from './input';
+import { StatsPanel } from './stats';
 
 type ToolId = 'paint' | 'road' | 'demolish' | 'route' | 'zone' | 'found';
 
@@ -37,6 +38,10 @@ const loop = new SimLoop(initialWorld, { now: () => performance.now() });
 const camera = new Camera();
 const renderer = new Renderer(canvas);
 const minimap = new Minimap(document.body);
+const statsPanel = new StatsPanel();
+window.addEventListener('keydown', (ev) => {
+  if (ev.key === 's' || ev.key === 'S') statsPanel.toggle();
+});
 minimap.setWorld(initialWorld);
 
 let activePaintTile = 1;
@@ -268,6 +273,7 @@ function frame(nowMs: number): void {
   statusClock += dtSec;
   if (statusClock >= 0.25) {
     statusClock = 0;
+    statsPanel.draw(currentWorld.history);
     hud.setInfo(
       `TERRA  Seed ${currentWorld.seed}  Tick ${currentWorld.tick}  ${speedLabel()}  ${fps} FPS` +
         routeInfoText(),

@@ -19,3 +19,7 @@
 ## Lessons Learned
 
 - [2026-09-04 22:24] [Lessons Learned] npm braucht Workspace-lokalen Cache — TERRA-Projekt (/home/peter/Projekte/WebSim): npm install scheitert mit EROFS, wenn npm den Standard-Cache /home/peter/.npm nutzt (Sandbox). Lösung: `npm install --cache ./.npm-cache` (Workspace-lokaler Cache, in .gitignore). Geschwindigkeit-Zerlegung: kleine Tasks, ein Commit pro Task, Format "M<n>: <Task>".
+
+## Action Guide
+
+- [2026-09-05 11:14] [Action Guide] TERRA M7.2 fertig – Rest M7.5-M7.7 offen — TERRA M7.2 erledigt (76dde8e): computeTaxIncome in demographics.ts (spiegelt Intervall-Steuerformel, inkl. taxRate), Budget-Panel im HUD (Kasse/BANKROTT, Steuern/Intervall, Unterhalt getrennt Straßen+Gebäude, Netto/Tick, Schulden), Panel liest Formel live statt gecachten Intervallwert. 218 Tests grün. OFFEN in M7: M7.5 Statistiken/Zeitreihen-Graphen (Empfehlung: history-Arrays pro Intervall in World, sample im Demografie-Intervall, minimales Canvas-Liniendiagramm), M7.6 Speichern/Laden inkl. UI-Zustand (Speed/activeOverlay/taxRate — taxRate schon in Savegame v11; Speed+Overlay zusätzlich serialisieren oder localStorage), M7.7 DoD-Nachweis Ruin via Steuerlast (taxBurdenOnSatisfaction → Wegzug, siehe demographics; isolierter lineWorld-Test mit tests/fakes.ts production:true). Danach M8 Tiefe zerlegen.

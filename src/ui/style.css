@@ -70,6 +70,13 @@ body {
   cursor: default;
 }
 
+#hud .stats-panel {
+  position: fixed;
+  top: 200px;
+  left: 8px;
+  border-color: #4a5a6a;
+}
+
 #hud .budget-panel {
   position: fixed;
   top: 96px;
