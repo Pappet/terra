@@ -12,7 +12,7 @@
  * Alles aggregiert (Mengen pro Paar/Gut/Tick), keine Einzelfahrzeuge.
  * Deterministisch: feste Reihenfolgen, kein Zufall.
  */
-import { GOOD_COUNT, GOODS, MARKET } from '../data/goods';
+import { GOOD_COUNT, MARKET } from '../data/goods';
 import { TRADE } from '../data/trade';
 import type { World } from './world';
 import { routeCapacity } from './employment';
@@ -168,7 +168,3 @@ export function importBalance(world: World, cityId: number): number {
   return sum;
 }
 
-/** Güternamen (für Panels), data-delegiert. */
-export function goodName(good: number): string {
-  return GOODS[good]?.name ?? `Gut ${good}`;
-}
