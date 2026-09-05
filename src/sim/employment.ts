@@ -13,10 +13,8 @@ import { MOVEMENT, ROAD_BY_ID } from '../data/roads';
 import { PathFinder } from './pathfinding';
 import type { World } from './world';
 
-export const EMPLOYMENT = {
-  /** Anteil der Erwerbsfähigen (Altersgruppen 1+2), der arbeiten will. */
-  participationRate: 0.6,
-} as const;
+import { EMPLOYMENT as _EMPLOYMENT } from '../data/employment';
+export const EMPLOYMENT = _EMPLOYMENT;
 
 export interface EmploymentState {
   /** flows[homeCity-1][jobCity-1] = Pendlerzahl. */

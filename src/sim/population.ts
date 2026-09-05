@@ -13,7 +13,8 @@ export const INCOME_LEVELS = 3;
 export const COHORTS_PER_CITY = AGE_BRACKETS * EDUCATION_LEVELS * INCOME_LEVELS;
 
 /** Kohorten-Schwelle für Alterung: alle N Ticks rückt eine Altersgruppe weiter. */
-export const AGE_TICK_INTERVAL = 200;
+import { AGE_TICK_INTERVAL as _AGE_TICK_INTERVAL } from '../data/demographics';
+export const AGE_TICK_INTERVAL: number = _AGE_TICK_INTERVAL;
 
 export function cohortIndex(age: number, education: number, income: number): number {
   if (age < 0 || age >= AGE_BRACKETS) throw new Error(`cohortIndex: Altersgruppe ${age}`);

@@ -13,17 +13,10 @@
  * Deterministisch: feste Reihenfolgen, kein Zufall.
  */
 import { GOOD_COUNT, GOODS, MARKET } from '../data/goods';
+import { TRADE } from '../data/trade';
 import type { World } from './world';
 import { routeCapacity } from './employment';
-
-export const TRADE = {
-  /** Transportkosten pro Gutseinheit und Reisezeit-Tick. */
-  transportCostPerTimeUnit: 0.1,
-  /** Lager, das die abgebende Stadt behält. */
-  reserveStock: 2,
-  /** Mindestmarge (Preisdifferenz minus Transportkosten) für Handel. */
-  minMargin: 0.2,
-} as const;
+export { TRADE };
 
 export interface TradeRouteInfo {
   from: number;

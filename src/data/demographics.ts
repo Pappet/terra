@@ -2,6 +2,9 @@
  * Demografie-Parameter (M4.2). Raten pro Alterungs-Intervall (siehe
  * AGE_TICK_INTERVAL); deterministisch über den Welt-RNG.
  */
+/** Ticks zwischen zwei Alterungs-/Demografie-Intervallen (1 "Jahr"). */
+export const AGE_TICK_INTERVAL = 200;
+
 export const DEMOGRAPHICS = {
   /** Geburten pro Erwachsenem (Altersgruppen 1+2) pro Intervall. */
   birthRatePerInterval: 0.08,
@@ -11,6 +14,8 @@ export const DEMOGRAPHICS = {
   childEducationChance: 0.9,
   /** Chance, dass ein junger Erwachsener bei 40+ Hochschulbildung bekommt. */
   higherEducationChance: 0.15,
+  /** Zeitreihen (M7.5): max. Samples pro Kanal. */
+  maxHistorySamples: 200,
   /** Ohne Wohnkapazität wandern Geburtenstatistisch ab (keine Obdachlosenzelte). */
 } as const;
 

@@ -210,7 +210,7 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
   H.residents.push(residentsTotal);
   H.satisfaction.push(avgSat);
   for (const key of ['tick', 'treasury', 'residents', 'satisfaction'] as const) {
-    if (H[key].length > 200) H[key].shift();
+    if (H[key].length > DEMOGRAPHICS.maxHistorySamples) H[key].shift();
   }
   return true;
 }
