@@ -67,8 +67,8 @@ Tasks:
 - [x] M7.3 Kredite: takeLoan/repayLoan, Zins kapitalisiert, Kreditlimit maxDebtPerAdult × Erwachsene
 - [x] M7.4 Bankrott: Kasse < −100 → bankrupt blockiert Bau/Zonen; Erholung ab Kasse ≥ 0 — Savegame v11
 - [x] M7.5 Statistiken: Zeitreihen (Kasse, Einwohner, Zufriedenheit) als Canvas-Liniendiagramm (Taste S) — Savegame v12
-- [~] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay; taxRate ist bereits im Savegame)
-- [~] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (deterministisch; Hebel: taxBurdenOnSatisfaction → Wegzug → Kollaps)
+- [ ] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay; taxRate ist bereits im Savegame)
+- [ ] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (deterministisch; Hebel: taxBurdenOnSatisfaction → Wegzug → Kollaps)
 
 ## M8 – Tiefe (nächster Meilenstein, noch nicht zerlegt)
 
@@ -76,5 +76,8 @@ DoD: Strom- und Wassernetz, Verschmutzung und Umwelt, Bildung, Migration zwische
 Städten, Ereignisse/Katastrophen, Bodenwert. Jedes Subsystem hat mindestens eine
 Rückkopplung in ein anderes.
 
-Hinweis: specs/M9-KONSOLIDIERUNG.md (benutzergeliefert) enthält Material für die
-Nach-dem-M8-Phase — wird bei der M8/M9-Zerlegung berücksichtigt.
+## M9 – Konsolidierung (nach M8, benutzergelieferte Spec)
+
+specs/M9-KONSOLIDIERUNG.md (von Peter): nach Abschluss und DoD-Nachweis von M8
+zerlegen und abarbeiten. Grundregel: keine neuen Features, Verhaltensänderungen nur
+wo eine Task es verlangt, zuerst Golden Master (M9.1) vor Umbauten.

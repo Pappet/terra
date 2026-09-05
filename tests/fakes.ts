@@ -11,6 +11,9 @@ import { PathFinder } from '../src/sim/pathfinding';
 import { Population } from '../src/sim/population';
 import { Storage } from '../src/sim/storage';
 import { cohortIndex } from '../src/sim/population';
+import { Rng } from '../src/sim/rng';
+import { computeMaxDebt, runDemographicsTick } from '../src/sim/demographics';
+import { FINANCE } from '../src/data/cities';
 import { assignWorkers } from '../src/sim/employment';
 import { runProductionTick } from '../src/sim/production';
 import { updateMarket } from '../src/sim/market';
@@ -23,6 +26,10 @@ export interface LineWorldOptions {
   waterColumns?: number[];
   /** update()-Pipeline aktivieren: Zuweisung + Produktion + Markt. */
   production?: boolean;
+  /** Demografie/Migration/Zeitreihen zusätzlich in der Pipeline (Intervall alle 200 Ticks). */
+  demographics?: boolean;
+  /** RNG-Seed für die Pipeline (Standard 42). */
+  seed?: number;
 }
 
 /**
@@ -57,6 +64,8 @@ export function lineWorld(opts: LineWorldOptions): World {
     population: new Population(),
     storage: new Storage(),
     market: new Market(),
+    history: { tick: [], treasury: [], residents: [], satisfaction: [] },
+    bankrupt: false,
     buildingIndex: new Int32Array(width),
     treasury: 500,
     trade: createTradeState(),
@@ -65,18 +74,49 @@ export function lineWorld(opts: LineWorldOptions): World {
   } as unknown as World;
 
   if (opts.production === true) {
-    (world as { update: () => void }).update = () => {
+    const rng = new Rng(opts.seed ?? 42);
+    (world as unknown as { rng: Rng; tick: number }).rng = rng;
+    (world as unknown as { tick: number }).tick = 0;
+    (world as unknown as { update: () => void }).update = () => {
+      const w2 = world as unknown as { tick: number };
       // syncPopulation-Äquivalent (ensureCity ist in World privat)
       for (let c = 1; c <= world.cities.count; c++) {
         world.population.ensureCity(c);
         world.storage.ensureCity(c);
         world.market.ensureCity(c);
       }
+      world.maxDebt = computeMaxDebt(world);
       world.commute = assignWorkers(world);
       updateMarket(world, runProductionTick(world));
+      if (opts.demographics === true) {
+        w2.tick++;
+        runDemographicsTick(world, rng, w2.tick);
+        // Bankrott-Check (wie world.update)
+        if (world.treasury < FINANCE.bankruptcyTreasuryLimit) {
+          (world as unknown as { bankrupt: boolean }).bankrupt = true;
+        } else if (world.treasury >= 0) {
+          (world as unknown as { bankrupt: boolean }).bankrupt = false;
+        }
+      }
       runTradeTick(world);
+      if (opts.demographics !== true) w2.tick++;
     };
   }
+
+  // settleResidents (Zuzug/Wegzug aus runMigration)
+  (world as unknown as {
+    settleResidents: (cityId: number, cohort: number, count: number) => void;
+  }).settleResidents = (cityId, cohort, count) => {
+    world.population.add(cityId, cohort, count);
+  };
+
+  // setTaxRate sofort anwenden (Fake: keine Action-Queue; die vollständige
+  // Action-Pipeline ist durch die realen World-Tests abgedeckt)
+  (world as unknown as { enqueue: (a: { kind: string; rate?: number }) => void }).enqueue = (a) => {
+    if (a.kind === 'setTaxRate' && typeof a.rate === 'number') {
+      world.taxRate = a.rate;
+    }
+  };
 
   // removeBuildingAt (Swap + Tile-Index-Pflege), wie World es macht
   (world as unknown as { removeBuildingAt: (index: number) => void }).removeBuildingAt = (index: number) => {
