@@ -490,7 +490,9 @@ export class World {
       world.buildingIndex[idx] = b + 1;
     }
     const treasury = d.treasury;
-    if (typeof treasury !== 'number' || !Number.isFinite(treasury) || treasury < 0) {
+    // Negative Kasse ist gültig: bankrotte Städte liegen unter 0 (M7.4) und
+    // müssen sich über das Savegame hinweg wieder erholen können.
+    if (typeof treasury !== 'number' || !Number.isFinite(treasury)) {
       throw new Error(`Savegame: treasury ist keine gültige Zahl: ${String(treasury)}`);
     }
     world.treasury = treasury;
