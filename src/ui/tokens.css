@@ -1,0 +1,64 @@
+/**
+ * Design-Tokens (M10.0). Einzige Stelle, an der Farben, Abstände, Schriften
+ * und Layout-Maße definiert werden. Komponenten-CSS greift nur über
+ * Custom Properties zu – keine Literalfarben ausserhalb dieser Datei.
+ */
+:root {
+  /* Flächen: von hinten (Karte/App) nach vorn (Panel/Hover). */
+  --bg: #0b0d10;
+  --surface: #12161c;
+  --surface-2: #171e26;
+  --surface-3: #1e2732;
+  --border: #232b35;
+  --border-strong: #35424f;
+
+  /* Text */
+  --text: #d5dce4;
+  --muted: #8391a0;
+  --dim: #5d6a78;
+
+  /* Akzent + Semantik */
+  --accent: #2d4a63;
+  --accent-border: #4a7ba6;
+  --accent-text: #a8d4ff;
+  --positive: #7fbf6a;
+  --negative: #d9705f;
+  --warning: #e0a83c;
+
+  /* Abstände (4er-Skala) */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+
+  /* Typografie */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-sm: 11px;
+  --fs-md: 12.5px;
+  --fs-lg: 15px;
+
+  --radius: 3px;
+
+  /* Layout-Maße der Shell */
+  --topbar-h: 44px;
+  --status-h: 32px;
+  --rail-w: 52px;
+  --options-w: 172px;
+  --dock-w: 320px;
+}
+
+/* Ein einziger Fokus-Stil für die ganze Oberfläche. */
+:focus-visible {
+  outline: 1px solid var(--accent-border);
+  outline-offset: 1px;
+}
+
+/*
+ * Komponenten setzen display (flex/grid); das schlaegt die UA-Regel fuer
+ * [hidden]. Ohne diese Zeile bleiben versteckte Elemente (Datei-Popover,
+ * Schulden-Kennzahl, Tab-Leiste) sichtbar.
+ */
+[hidden] {
+  display: none !important;
+}

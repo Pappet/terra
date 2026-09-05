@@ -1,24 +1,35 @@
 /**
- * Bootstrap: Welt + Loop + Kamera + Renderer + HUD + Eingabe, rAF-Frame.
- * Sim-Zugriff läuft ausschliesslich über Actions; das HUD liest nur Zustand.
+ * Bootstrap (M10.0): Welt + Loop + Kamera + Renderer + Shell + Eingabe.
+ *
+ * main verdrahtet nur – die Panels bauen ihr DOM selbst, der Sim-Zugriff läuft
+ * ausschliesslich über Actions, und gelesen wird der Weltzustand nur zur
+ * Anzeige (siehe ARCHITECTURE.md, Leser/Schreiber-Regel).
  */
 import { SIM_CONFIG, VIEW_CONFIG } from '../data/config';
-import { GROWTH } from '../data/cities';
 import { OVERLAYS } from '../data/overlays';
+import { TILE_TYPES } from '../data/tiles';
+import { DEFAULT_TOOL, type ToolId } from '../data/tools';
 import { Camera } from '../render/camera';
 import { Minimap } from '../render/minimap';
 import { Renderer } from '../render/renderer';
 import { SimLoop } from '../sim/loop';
-import { computeDemand, computeStats } from '../sim/demand';
-import { computeSatisfaction, computeTaxIncome } from '../sim/demographics';
-import { exportBalance, importBalance } from '../sim/trade';
+import type { GameAction } from '../sim/actions';
 import { World } from '../sim/world';
 import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '../persist/save';
-import { Hud } from './hud';
+import { Dock } from './dock';
+import { formatFixed, formatInt } from './format';
 import { attachInput } from './input';
-import { StatsPanel } from './stats';
+import { regionMetrics } from './metrics';
+import { createShell } from './shell';
+import { attachShortcuts } from './shortcuts';
+import { StatusBar } from './statusbar';
+import { Topbar } from './topbar';
+import { ToolOptions } from './tooloptions';
+import { ToolRail } from './toolrail';
+import { REGION, resolveSelection, sameSelection, type Selection } from './selection';
 
-type ToolId = 'paint' | 'road' | 'demolish' | 'route' | 'zone' | 'found';
+const SPEED_STEPS: readonly number[] = [0, 1, 3, 10];
+const STATUS_INTERVAL_SEC = 0.25;
 
 function seedFromUrl(): number {
   const raw = new URLSearchParams(window.location.search).get('seed');
@@ -29,46 +40,83 @@ function seedFromUrl(): number {
   return SIM_CONFIG.defaultSeed;
 }
 
-const canvas = document.getElementById('game') as HTMLCanvasElement;
-const hudContainer = document.getElementById('hud') as HTMLDivElement;
+// ---------- Welt, Loop, Ansicht ----------
 
+const shell = createShell(document.getElementById('app') as HTMLElement);
 const initialWorld = new World(seedFromUrl(), SIM_CONFIG.map.width, SIM_CONFIG.map.height);
 let currentWorld: World = initialWorld;
 const loop = new SimLoop(initialWorld, { now: () => performance.now() });
 const camera = new Camera();
-// Sichtfeld auf die Kartenmitte richten (x/y ist die Position des Zentrums).
 camera.x = initialWorld.width / 2;
 camera.y = initialWorld.height / 2;
-const renderer = new Renderer(canvas);
-// WICHTIG: Der Renderer braucht die Welt auch beim Erststart – sonst bleibt
-// der Canvas schwarz (draw() bricht ohne Welt ab).
+const renderer = new Renderer(shell.canvas);
 renderer.setWorld(initialWorld);
 
-let activePaintTile = 1;
+// ---------- UI-Zustand ----------
+
+let activeTool: ToolId = DEFAULT_TOOL;
 let activeOverlay = 'surface';
-let activeTool: ToolId = 'found';
+let activePaintTile = 1;
 let activeRoadType = 2;
 let activeZone = 1;
+let selection: Selection = REGION;
 let routeFrom: number | null = null;
+let hoverTile = -1;
 
-function cycleOverlay(): void {
-  const idx = OVERLAYS.findIndex((o) => o.id === activeOverlay);
-  const next = OVERLAYS[(idx + 1) % OVERLAYS.length] as (typeof OVERLAYS)[number];
-  applyOverlay(next.id);
+function dispatch(action: GameAction): void {
+  currentWorld.enqueue(action);
+  loop.stepOnce();
+}
+
+function selectionTitle(sel: Selection): string {
+  if (sel.kind === 'city') {
+    return currentWorld.cities.names[sel.cityId - 1] ?? `Stadt ${sel.cityId}`;
+  }
+  if (sel.kind === 'tile') {
+    return `Tile ${sel.index % currentWorld.width}, ${Math.floor(sel.index / currentWorld.width)}`;
+  }
+  return 'Region';
+}
+
+function setSelection(next: Selection): void {
+  const changedContext = next.kind !== selection.kind;
+  const changed = !sameSelection(next, selection);
+  selection = next;
+  if (changed || changedContext) dock.setSelection(selection, selectionTitle(selection));
+}
+
+function applyTool(tool: ToolId): void {
+  activeTool = tool;
+  rail.setActive(tool);
+  routeFrom = null;
+  const hasOptions = options.setTool(tool, {
+    zone: activeZone,
+    road: activeRoadType,
+    tile: activePaintTile,
+  });
+  shell.setOptionsVisible(hasOptions);
 }
 
 function applyOverlay(overlayId: string): void {
   activeOverlay = overlayId;
-  hud.setActiveOverlay(overlayId);
+  status.setActiveOverlay(overlayId);
 }
 
-function speedLabel(): string {
-  return loop.speed === 0 ? 'Pause' : `${loop.speed}x`;
+function cycleOverlay(): void {
+  const idx = OVERLAYS.findIndex((o) => o.id === activeOverlay);
+  const next = OVERLAYS[(idx + 1) % OVERLAYS.length];
+  if (next !== undefined) applyOverlay(next.id);
 }
 
 function applySpeed(speed: number): void {
   loop.setSpeed(speed);
-  hud.setActiveSpeed(loop.speed);
+  topbar.setSpeed(loop.speed);
+}
+
+function speedStep(delta: number): void {
+  const idx = SPEED_STEPS.indexOf(loop.speed);
+  const next = SPEED_STEPS[Math.max(0, Math.min(SPEED_STEPS.length - 1, (idx < 0 ? 1 : idx) + delta))];
+  if (next !== undefined) applySpeed(next);
 }
 
 function applyUi(ui: { speed?: number; overlay?: string } | null): void {
@@ -83,39 +131,20 @@ function applyLoadedWorld(next: World): void {
   minimap.setWorld(next);
   currentWorld = next;
   routeFrom = null;
+  hoverTile = -1;
   camera.clampToMap(next.width, next.height);
-  hud.flash(`Welt geladen: Seed ${next.seed}, Tick ${next.tick}`);
+  setSelection(REGION);
+  status.flash(`Welt geladen: Seed ${next.seed}, Tick ${next.tick}`);
 }
 
-const hud = new Hud(hudContainer, {
+// ---------- Panels ----------
+
+const topbar = new Topbar(shell.topbar, {
   onSpeed: applySpeed,
-  onTaxRate: (rate) => {
-    currentWorld.enqueue({ kind: 'setTaxRate', rate });
-    loop.stepOnce();
-    hud.setActiveTaxRate(currentWorld.taxRate);
-  },
-  onOverlay: applyOverlay,
-  onTool: (toolId) => {
-    activeTool = toolId as ToolId;
-    hud.setActiveTool(toolId);
-    routeFrom = null;
-  },
-  onRoadType: (roadId) => {
-    activeRoadType = roadId;
-    hud.setActiveRoadType(roadId);
-  },
-  onZoneType: (zone) => {
-    activeZone = zone;
-    hud.setActiveZoneType(zone);
-  },
-  onPaintTile: (tileId) => {
-    activePaintTile = tileId;
-    hud.setActivePaintTile(tileId);
-  },
   onSave: () => {
     saveToBrowser(currentWorld, { speed: loop.speed, overlay: activeOverlay })
-      .then(() => hud.flash(`Gespeichert (Tick ${currentWorld.tick})`))
-      .catch((err: unknown) => hud.flash(`Speichern fehlgeschlagen: ${String(err)}`));
+      .then(() => status.flash(`Gespeichert (Tick ${currentWorld.tick})`))
+      .catch((err: unknown) => status.flash(`Speichern fehlgeschlagen: ${String(err)}`));
   },
   onLoad: () => {
     loadFromBrowser()
@@ -123,11 +152,11 @@ const hud = new Hud(hudContainer, {
         applyLoadedWorld(world);
         applyUi(ui);
       })
-      .catch((err: unknown) => hud.flash(`Laden fehlgeschlagen: ${String(err)}`));
+      .catch((err: unknown) => status.flash(`Laden fehlgeschlagen: ${String(err)}`));
   },
   onExport: () => {
     exportToFile(currentWorld, { speed: loop.speed, overlay: activeOverlay });
-    hud.flash('Export gestartet');
+    status.flash('Export gestartet');
   },
   onImport: (file) => {
     importFromFile(file)
@@ -135,21 +164,40 @@ const hud = new Hud(hudContainer, {
         applyLoadedWorld(world);
         applyUi(ui);
       })
-      .catch((err: unknown) => hud.flash(`Import fehlgeschlagen: ${String(err)}`));
+      .catch((err: unknown) => status.flash(`Import fehlgeschlagen: ${String(err)}`));
+  },
+  onToggleDock: () => shell.setDockVisible(!shell.isDockVisible()),
+});
+
+const rail = new ToolRail(shell.rail, applyTool);
+
+const options = new ToolOptions(shell.options, {
+  onZone: (zone) => {
+    activeZone = zone;
+    options.setActiveKey(zone);
+  },
+  onRoad: (roadId) => {
+    activeRoadType = roadId;
+    options.setActiveKey(roadId);
+  },
+  onTile: (tileId) => {
+    activePaintTile = tileId;
+    options.setActiveKey(tileId);
   },
 });
 
-// Minimap + Statistik in die HUD-Spalten (rechts bzw. links) einsortieren.
-const minimap = new Minimap(hud.rightSlot);
+const status = new StatusBar(shell.status, applyOverlay);
+const dock = new Dock(shell.dock, () => setSelection(REGION));
+const minimap = new Minimap(dock.minimapHost, 288);
 minimap.setWorld(initialWorld);
-const statsPanel = new StatsPanel(hud.leftSlot);
-window.addEventListener('keydown', (ev) => {
-  if (ev.key === 's' || ev.key === 'S') statsPanel.toggle();
-});
 
-// Minimap: Klick/Drag zentriert die Kamera
+applyTool(activeTool);
+applyOverlay(activeOverlay);
+applySpeed(1);
+
+// Minimap: Klick/Drag zentriert die Kamera.
 let minimapDragging = false;
-function jumpTo(ev: MouseEvent): void {
+function jumpToPointer(ev: MouseEvent): void {
   const pos = minimap.screenToWorld(ev.clientX, ev.clientY);
   camera.x = pos.x;
   camera.y = pos.y;
@@ -157,64 +205,64 @@ function jumpTo(ev: MouseEvent): void {
 }
 minimap.canvas.addEventListener('mousedown', (ev) => {
   minimapDragging = true;
-  jumpTo(ev);
+  jumpToPointer(ev);
 });
 window.addEventListener('mousemove', (ev) => {
-  if (minimapDragging) jumpTo(ev);
+  if (minimapDragging) jumpToPointer(ev);
 });
 window.addEventListener('mouseup', () => {
   minimapDragging = false;
 });
 
-// Werkzeug-Zeile im HUD mit dem Initial-Tool synchronisieren.
-hud.setActiveTool(activeTool);
+// ---------- Eingabe ----------
 
-const input = attachInput(canvas, {
+const input = attachInput(shell.canvas, {
   camera,
   getMapSize: () => ({ width: currentWorld.width, height: currentWorld.height }),
+  hoverAt: (tileIndex) => {
+    hoverTile = tileIndex;
+  },
   paintAt: (tileIndex) => {
     const x = tileIndex % currentWorld.width;
     const y = Math.floor(tileIndex / currentWorld.width);
     switch (activeTool) {
+      case 'select':
+        setSelection(resolveSelection(currentWorld, tileIndex));
+        return;
       case 'paint':
-        currentWorld.enqueue({ kind: 'paintTile', x, y, tile: activePaintTile });
-        break;
+        dispatch({ kind: 'paintTile', x, y, tile: activePaintTile });
+        return;
       case 'road':
-        currentWorld.enqueue({ kind: 'buildRoad', x, y, road: activeRoadType });
-        break;
+        dispatch({ kind: 'buildRoad', x, y, road: activeRoadType });
+        return;
       case 'zone':
-        currentWorld.enqueue({ kind: 'paintZone', x, y, zone: activeZone });
-        break;
+        dispatch({ kind: 'paintZone', x, y, zone: activeZone });
+        return;
       case 'found':
-        currentWorld.enqueue({
-          kind: 'foundCity',
-          x,
-          y,
-          name: `Stadt ${currentWorld.cities.count + 1}`,
-        });
-        break;
+        dispatch({ kind: 'foundCity', x, y, name: `Stadt ${currentWorld.cities.count + 1}` });
+        return;
       case 'demolish':
-        currentWorld.enqueue({ kind: 'demolishRoad', x, y });
-        break;
-      case 'route': {
+        dispatch({ kind: 'demolishRoad', x, y });
+        return;
+      case 'route':
         if (routeFrom === null) {
           routeFrom = tileIndex;
-          currentWorld.enqueue({ kind: 'clearRoute' });
+          dispatch({ kind: 'clearRoute' });
         } else {
-          currentWorld.enqueue({ kind: 'requestRoute', from: routeFrom, to: tileIndex });
+          dispatch({ kind: 'requestRoute', from: routeFrom, to: tileIndex });
           routeFrom = null;
         }
-        break;
-      }
+        return;
     }
-    loop.stepOnce();
   },
-  togglePause: () => applySpeed(loop.speed === 0 ? 1 : 0),
-  setSpeed: applySpeed,
 });
 
-window.addEventListener('keydown', (ev) => {
-  if (ev.key === 'o' || ev.key === 'O') cycleOverlay();
+attachShortcuts({
+  onTool: applyTool,
+  onTogglePause: () => applySpeed(loop.speed === 0 ? 1 : 0),
+  onSpeedStep: speedStep,
+  onCycleOverlay: cycleOverlay,
+  onClearSelection: () => setSelection(REGION),
 });
 
 // ---------- Frame ----------
@@ -223,52 +271,58 @@ let lastFrameMs = performance.now();
 let fpsCount = 0;
 let fpsWindowStart = lastFrameMs;
 let fps = 0;
-let statusClock = 0;
+let statusClock = STATUS_INTERVAL_SEC;
 let lastShownRejected: string | null = null;
 
-function routeInfoText(): string {
-  const route = currentWorld.route;
-  const finance = `Kasse ${Math.floor(currentWorld.treasury)} (Unterhalt ${currentWorld.upkeepPerTick.toFixed(2)}/Tick)`;
-  if (route === null) return `  |  ${finance}`;
-  const seconds = Math.round((route.timeTicks / 20) * 10) / 10;
-  return `  |  ${finance}  |  Route: ${route.path.length} Tiles, ${route.timeTicks.toFixed(1)} Ticks (~${seconds} s bei 1x)`;
+function hoverText(): string {
+  if (hoverTile < 0 || hoverTile >= currentWorld.width * currentWorld.height) return '–';
+  const x = hoverTile % currentWorld.width;
+  const y = Math.floor(hoverTile / currentWorld.width);
+  const tile = TILE_TYPES.find((t) => t.id === (currentWorld.tiles[hoverTile] ?? 0));
+  const road = currentWorld.roads[hoverTile] ?? 0;
+  const zone = currentWorld.zoneType[hoverTile] ?? 0;
+  return (
+    `${x},${y} · ${tile?.name ?? '?'}` +
+    (zone > 0 ? ` · Zone ${zone}` : '') +
+    (road > 0 ? ` · Strasse ${road}` : '')
+  );
 }
 
-function updateCityPanel(): void {
-  const entries = [];
-  for (let c = 1; c <= currentWorld.cities.count; c++) {
-    const stats = computeStats(c, currentWorld.buildings);
-    const demand = computeDemand(stats);
-    const residents = stats.houses * GROWTH.residentsPerHouse;
-    const jobs = (stats.shops + stats.factories) * GROWTH.jobsPerBuilding;
-    entries.push({
-      id: c,
-      name: currentWorld.cities.names[c - 1] ?? `Stadt ${c}`,
-      residents,
-      jobs,
-      satisfaction: computeSatisfaction(currentWorld, c),
-      exports: exportBalance(currentWorld, c),
-      imports: importBalance(currentWorld, c),
-      residential: demand.residential,
-      commercial: demand.commercial,
-      industrial: demand.industrial,
-      houses: stats.houses,
-      shops: stats.shops,
-      factories: stats.factories,
-    });
-  }
-  hud.updateBudget({
+function routeText(): string {
+  const route = currentWorld.route;
+  if (route === null) return '';
+  const seconds = Math.round((route.timeTicks / 20) * 10) / 10;
+  return `  ·  Route ${route.path.length} Tiles / ${formatFixed(route.timeTicks, 1)} Ticks (~${seconds} s)`;
+}
+
+function updatePanels(): void {
+  const m = regionMetrics(currentWorld);
+  topbar.update({
+    seed: currentWorld.seed,
+    tick: currentWorld.tick,
     treasury: currentWorld.treasury,
-    taxIncome: computeTaxIncome(currentWorld),
-    roadUpkeep: currentWorld.upkeepPerTick,
-    buildingUpkeep: currentWorld.buildings.count * 0.01,
+    netPerTick: m.netPerTick,
+    residents: m.residents,
+    satisfaction: m.satisfaction,
     debt: currentWorld.debt,
     bankrupt: currentWorld.bankrupt,
   });
-  hud.updateCities(entries, (cityId) => {
-    camera.x = currentWorld.cities.x[cityId - 1] ?? camera.x;
-    camera.y = currentWorld.cities.y[cityId - 1] ?? camera.y;
-    camera.clampToMap(currentWorld.width, currentWorld.height);
+  status.setInfo(`${hoverText()}${routeText()}  ·  ${formatInt(fps)} FPS`);
+
+  // Eine gelöschte/geladene Welt kann die Selektion ungültig machen.
+  if (selection.kind === 'city' && selection.cityId > currentWorld.cities.count) {
+    setSelection(REGION);
+  }
+  dock.update({
+    world: currentWorld,
+    selection,
+    selectCity: (cityId) => setSelection({ kind: 'city', cityId }),
+    jumpTo: (x, y) => {
+      camera.x = x;
+      camera.y = y;
+      camera.clampToMap(currentWorld.width, currentWorld.height);
+    },
+    dispatch,
   });
 }
 
@@ -280,8 +334,7 @@ function frame(nowMs: number): void {
 
   const { dx, dy } = input.getKeyPanDir();
   if (dx !== 0 || dy !== 0) {
-    const dist = VIEW_CONFIG.keyPanTilesPerSecond * dtSec;
-    camera.panByTiles(dx * dist, dy * dist);
+    camera.panByTiles(dx * VIEW_CONFIG.keyPanTilesPerSecond * dtSec, dy * VIEW_CONFIG.keyPanTilesPerSecond * dtSec);
   }
   camera.clampToMap(currentWorld.width, currentWorld.height);
   renderer.draw(camera, activeOverlay);
@@ -293,19 +346,16 @@ function frame(nowMs: number): void {
     fpsCount = 0;
     fpsWindowStart = nowMs;
   }
+
   statusClock += dtSec;
-  if (statusClock >= 0.25) {
+  if (statusClock >= STATUS_INTERVAL_SEC) {
     statusClock = 0;
-    statsPanel.draw(currentWorld.history);
-    hud.setInfo(
-      `TERRA  Seed ${currentWorld.seed}  Tick ${currentWorld.tick}  ${speedLabel()}  ${fps} FPS` +
-        routeInfoText(),
-    );
-    updateCityPanel();
+    updatePanels();
   }
+
   if (currentWorld.lastRejected !== lastShownRejected) {
     lastShownRejected = currentWorld.lastRejected;
-    if (lastShownRejected !== null) hud.flash(lastShownRejected);
+    if (lastShownRejected !== null) status.flash(lastShownRejected);
   }
 
   requestAnimationFrame(frame);

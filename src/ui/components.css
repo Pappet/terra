@@ -1,0 +1,476 @@
+/**
+ * Komponenten (M10.0). Alles innerhalb der Shell-Regionen: Topbar, Rail,
+ * Werkzeug-Optionen, Dock/Inspektor, Statusleiste. Werte kommen aus tokens.css.
+ */
+
+/* ---------- Grundelemente ---------- */
+
+button {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s1) var(--s2);
+  font: inherit;
+  font-size: var(--fs-md);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+button:hover {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+button.active {
+  background: var(--accent);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pos {
+  color: var(--positive);
+}
+.neg {
+  color: var(--negative);
+}
+.warn {
+  color: var(--warning);
+}
+.muted {
+  color: var(--muted);
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  vertical-align: middle;
+  flex: none;
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 0 var(--s2);
+  position: relative;
+}
+
+.topbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--accent-text);
+}
+
+.topbar-ident {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.topbar-metrics {
+  display: flex;
+  gap: var(--s4);
+  margin-left: auto;
+  align-items: baseline;
+}
+
+.metric {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s1);
+}
+
+.metric-label {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-lg);
+}
+
+.metric-sub {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.badge {
+  border: 1px solid var(--negative);
+  color: var(--negative);
+  border-radius: var(--radius);
+  padding: 1px var(--s1);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.08em;
+}
+
+.segment {
+  display: flex;
+}
+
+.segment button {
+  border-radius: 0;
+  border-right-width: 0;
+  min-width: 34px;
+  text-align: center;
+}
+
+.segment button:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.segment button:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  border-right-width: 1px;
+}
+
+/* Datei-Menü: transientes Popover, an die Topbar gebunden (kein Dauer-Panel). */
+.menu {
+  position: relative;
+}
+
+.menu-popover {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  right: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: var(--s1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 150px;
+}
+
+.menu-popover button {
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+}
+
+.menu-popover button:hover {
+  background: var(--surface-3);
+}
+
+/* ---------- Werkzeug-Rail ---------- */
+
+.rail {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s2) 0;
+}
+
+.rail button {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  padding: 0;
+}
+
+.rail-separator {
+  width: 26px;
+  height: 1px;
+  background: var(--border);
+  margin: var(--s1) 0;
+  flex: none;
+}
+
+.rail-spacer {
+  flex: 1;
+}
+
+/* ---------- Werkzeug-Optionen ---------- */
+
+.options {
+  padding: var(--s2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.options-title {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--s1);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  text-align: left;
+  width: 100%;
+}
+
+.option-meta {
+  margin-left: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+}
+
+.option.active .option-meta {
+  color: var(--accent-text);
+}
+
+.options-hint {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  margin-top: var(--s2);
+}
+
+/* ---------- Dock / Inspektor ---------- */
+
+.dock-minimap {
+  padding: var(--s2);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.dock-minimap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  cursor: crosshair;
+}
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.inspector-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.inspector-title {
+  font-size: var(--fs-lg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-back {
+  padding: 0 var(--s2);
+}
+
+.inspector-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.inspector-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.inspector-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: var(--s2);
+  white-space: nowrap;
+}
+
+.inspector-tabs button:hover {
+  background: var(--surface-2);
+}
+
+.inspector-tabs button.active {
+  color: var(--accent-text);
+  background: transparent;
+  border-bottom-color: var(--accent-border);
+}
+
+.inspector-body {
+  padding: var(--s2);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Kennzahlentabelle: Beschriftung links, Zahl rechtsbündig. */
+.kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--s2);
+  align-items: baseline;
+}
+
+.kv dt {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.kv dd {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.section-title {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: var(--s3) 0 var(--s1);
+}
+
+.section-title:first-child {
+  margin-top: 0;
+}
+
+.list-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  padding: var(--s1) var(--s1);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.list-row:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.list-row.active {
+  border-color: var(--accent-border);
+}
+
+.list-row .list-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-row .list-meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.bar {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-border);
+}
+
+.empty {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+
+.button-row {
+  display: flex;
+  gap: var(--s1);
+  flex-wrap: wrap;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ---------- Statusleiste ---------- */
+
+.statusbar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s2);
+}
+
+.overlay-chips {
+  display: flex;
+  gap: var(--s1);
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+
+.overlay-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.overlay-chips button {
+  padding: 1px var(--s2);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.status-message {
+  color: var(--positive);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  flex: none;
+}
+
+.status-info {
+  margin-left: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  flex: none;
+}

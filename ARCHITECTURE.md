@@ -108,9 +108,24 @@ abgeleitete Felder (siehe oben) dürfen ohne Bump ergänzt werden. UI-Zustand
   SimLoop (`loop.ts`).
 - `render` (camera/renderer/minimap/overlay) liest Weltzustand und invalidiert
   Offscreen-Caches über `tileRev`; Overlay-Farbtabellen liegen in `data/overlays.ts`.
-- `ui` (hud/main/panels) rendert Panel-DOM 4×/s, mappt Eingaben auf Actions
-  (`enqueue`) und Speed-Änderungen am SimLoop; Statistik-Panel zeichnet
-  `world.history` als Canvas-Liniendiagramm.
+- `ui` (shell/main/panels) rendert Panel-DOM 4×/s, mappt Eingaben auf Actions
+  (`enqueue`) und Speed-Änderungen am SimLoop.
+
+### UI-Shell (M10.0)
+
+- `shell.ts` besitzt das CSS-Grid mit fünf Regionen (Topbar, Werkzeug-Rail,
+  Werkzeug-Optionen, Canvas, Dock, Statusleiste). Der Canvas ist eine Grid-Zelle:
+  kein `position: fixed`, kein z-index-Stapel, keine überlappenden Panels.
+- Der Inspektor im Dock zeigt genau einen Tab; welche Tabs zur Wahl stehen,
+  entscheidet der Selektionskontext (`region` / `city` / `tile`).
+  **Ein neues Panel ist ein Eintrag in `ui/inspector/registry.ts`** — kein
+  Eingriff ins Layout. Nur der sichtbare Tab rechnet.
+- Auflösung eines Kartenklicks in eine Selektion: `ui/selection.ts`
+  (reine Funktion, ohne DOM getestet). Zahlenformate: `ui/format.ts`.
+- Kennzahlen lesen alle über `ui/metrics.ts`, damit Topbar und Inspektor
+  dieselben Werte zeigen.
+- Farben, Abstände, Schriften und Layoutmaße stehen ausschliesslich in
+  `ui/tokens.css`.
 
 ## Test-Layout
 

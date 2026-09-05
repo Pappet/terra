@@ -23,7 +23,7 @@ Strassen. Die Simulation erweckt das zum Leben:
 - Canvas2D, Tile-basiert, Kamera mit Pan/Zoom, Layer-Caching
 - Eigener Fixed-Tick-Loop, von Rendering entkoppelt, deterministisch, seeded RNG (mulberry32)
 - Savegames in IndexedDB plus Export/Import als Datei (JSON, Layer base64)
-- Tests mit Vitest (241+, DOM-frei), Golden-Master-Regression gegen referenz-Hash
+- Tests mit Vitest (260+, DOM-frei), Golden-Master-Regression gegen referenz-Hash
 - Kein Backend, kein Multiplayer, kein 3D, keine Assets von Dritten
 
 ## Starten
@@ -36,6 +36,28 @@ npm run build    # Typcheck + Production-Build
 ```
 
 Der Seed lässt sich per URL-Parameter setzen: `?seed=12345`.
+
+## Bedienung
+
+Die Oberfläche ist ein App-Frame (M10.0): Topbar mit Kennzahlen und Geschwindigkeit,
+Werkzeugleiste links, Optionen des aktiven Werkzeugs daneben, Karte in der Mitte,
+Dock rechts (Minimap + Inspektor), Statusleiste unten mit Overlay-Wahl.
+
+| Eingabe | Wirkung |
+| --- | --- |
+| `1`…`7` | Werkzeug (Auswahl, Gründen, Zonen, Strasse, Abriss, Route, Malen) |
+| Linke Maustaste | Werkzeug anwenden, ziehen malt eine Linie |
+| Rechte/mittlere Maustaste | Karte schwenken |
+| Mausrad, `+` / `-` | Zoom |
+| `W A S D` / Pfeiltasten | Karte schwenken |
+| Leertaste | Pause an/aus |
+| `[` / `]` | Geschwindigkeit langsamer/schneller (Pause, 1x, 3x, 10x) |
+| `O` | nächstes Overlay |
+| `ESC` | Auswahl aufheben (Inspektor zurück auf Region) |
+
+Der Inspektor im Dock folgt der Auswahl: ohne Auswahl Region (Übersicht, Budget,
+Statistik), nach Klick auf eine Stadt deren Tabs (Übersicht, Wirtschaft, Bevölkerung),
+sonst das einzelne Tile (inklusive Verschmutzung und Versorgungsnetz).
 
 ## Architektur
 
@@ -60,6 +82,7 @@ einen Web Worker bewusst **nicht** nötig gemacht.
 ## Stand
 
 M0–M9 abgeschlossen (Gerüst, Welt, Netz, Siedlung, Menschen, Wirtschaft, Handel,
-Verwaltung, Tiefe, Konsolidierung). Details und Task-Listen: [PLAN.md](PLAN.md).
+Verwaltung, Tiefe, Konsolidierung), dazu M10.0 (UI-Shell, siehe
+[specs/M10-UI-SHELL.md](specs/M10-UI-SHELL.md)). Details und Task-Listen: [PLAN.md](PLAN.md).
 Entscheidungen: [DECISIONS.md](DECISIONS.md). Entwicklungslog: [JOURNAL.md](JOURNAL.md).
 Offene Ideen: [BACKLOG.md](BACKLOG.md).

@@ -1,8 +1,12 @@
 /**
- * Eingabe auf dem Canvas: Malen (linke Maustaste), Schwenken (rechte/mittlere),
- * Zoom (Rad, +/-), Tastatur-Pan (WASD/Pfeile), Pause/Speed (Leertaste, 1/2/3).
- * Reaktionen laufen über den InputHandler zurück an main; die Funktion liefert
- * ein Binding, das main pro Frame für den Tastatur-Pan abfragt.
+ * Eingabe auf dem Canvas: Malen/Auswählen (linke Maustaste), Schwenken
+ * (rechte/mittlere), Zoom (Rad, +/-), Tastatur-Pan (WASD/Pfeile).
+ *
+ * Seit M10.0 gehört dem Canvas nur noch die Kartensteuerung; Spiel-Kürzel
+ * (Werkzeuge, Geschwindigkeit, Overlay) liegen in shortcuts.ts. Der Viewport
+ * wird per ResizeObserver verfolgt, weil der Canvas eine Grid-Zelle ist und
+ * beim Ein-/Ausklappen von Panels seine Größe ändert, ohne dass das Fenster
+ * sich ändert.
  */
 import { VIEW_CONFIG } from '../data/config';
 import type { Camera } from '../render/camera';
@@ -11,10 +15,10 @@ export interface InputHandler {
   camera: Camera;
   /** Aktuelle Kartengrösse (kann sich durch Laden eines Savegames ändern). */
   getMapSize(): { width: number; height: number };
-  /** Malen am Tile-Index (Grenzen wurden bereits geprüft). */
+  /** Malen/Anwenden am Tile-Index (Grenzen wurden bereits geprüft). */
   paintAt(tileIndex: number): void;
-  togglePause(): void;
-  setSpeed(speed: number): void;
+  /** Tile unter dem Zeiger (-1 = ausserhalb der Karte). */
+  hoverAt(tileIndex: number): void;
 }
 
 export interface InputBinding {
@@ -22,7 +26,8 @@ export interface InputBinding {
   getKeyPanDir(): { dx: number; dy: number };
 }
 
-export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): InputBinding {  const camera = handler.camera;
+export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): InputBinding {
+  const camera = handler.camera;
   const pressedKeys = new Set<string>();
   const mouse = { painting: false, panning: false, lastX: 0, lastY: 0, lastTile: -1 };
   let viewportW = 1;
@@ -32,7 +37,7 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
     viewportW = canvas.clientWidth;
     viewportH = canvas.clientHeight;
   };
-  window.addEventListener('resize', syncViewport);
+  new ResizeObserver(syncViewport).observe(canvas);
   syncViewport();
 
   function tileUnder(ev: MouseEvent): number {
@@ -58,7 +63,7 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
       // lastTile=-1), und Bresenham bleibt in der Bounding-Box seiner End-
       // punkte -> die Linie kann die Karte nicht verlassen. Der Bounds-Check
       // ist reine Verteidigung gegen einen stale lastTile nach Weltwechsel
-      // (Laden mit anderer Kartengrösse) bei gehaltener Maustaste.
+      // (kleinere Karte geladen, Zeiger noch gedrückt).
       const { width, height } = handler.getMapSize();
       const maxIdx = width * height;
       for (const t of lineTiles(mouse.lastTile, idx, width).slice(1)) {
@@ -72,17 +77,6 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
 
   canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
-  canvas.addEventListener(
-    'wheel',
-    (ev) => {
-      ev.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const factor = ev.deltaY < 0 ? VIEW_CONFIG.wheelZoomFactor : 1 / VIEW_CONFIG.wheelZoomFactor;
-      camera.zoomAt(ev.clientX - rect.left, ev.clientY - rect.top, factor);
-    },
-    { passive: false },
-  );
-
   canvas.addEventListener('mousedown', (ev) => {
     if (ev.button === 0) {
       mouse.painting = true;
@@ -95,6 +89,8 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
     }
   });
 
+  // Ziehen (Malen/Schwenken) muss auch ausserhalb des Canvas weiterlaufen,
+  // deshalb hängt die Geste am Fenster; die Hover-Anzeige nur am Canvas.
   window.addEventListener('mousemove', (ev) => {
     if (mouse.painting) {
       paintUnder(ev);
@@ -105,6 +101,22 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
     }
   });
 
+  canvas.addEventListener('mousemove', (ev) => {
+    handler.hoverAt(tileUnder(ev));
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    handler.hoverAt(-1);
+    mouse.lastTile = -1;
+  });
+
+  canvas.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const factor = ev.deltaY < 0 ? VIEW_CONFIG.wheelZoomFactor : 1 / VIEW_CONFIG.wheelZoomFactor;
+    camera.zoomAt(ev.clientX - rect.left, ev.clientY - rect.top, factor);
+  }, { passive: false });
+
   window.addEventListener('mouseup', () => {
     mouse.painting = false;
     mouse.panning = false;
@@ -112,21 +124,9 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
   });
 
   window.addEventListener('keydown', (ev) => {
+    if (isTextTarget(ev.target)) return;
     pressedKeys.add(ev.key.toLowerCase());
     switch (ev.key) {
-      case ' ':
-        ev.preventDefault();
-        handler.togglePause();
-        return;
-      case '1':
-        handler.setSpeed(1);
-        return;
-      case '2':
-        handler.setSpeed(3);
-        return;
-      case '3':
-        handler.setSpeed(10);
-        return;
       case '+':
       case '=':
         camera.zoomAt(viewportW / 2, viewportH / 2, VIEW_CONFIG.wheelZoomFactor);
@@ -152,6 +152,11 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
   }
 
   return { getKeyPanDir };
+}
+
+/** Tastatur ignorieren, solange ein Eingabefeld den Fokus hat. */
+function isTextTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 }
 
 /** Gitterlinien von bis (inklusive beider Enden), Bresenham auf Tile-Basis. */

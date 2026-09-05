@@ -426,3 +426,17 @@ Einkommens-Mobilität, Pendler-Visualisierung, dynamische Konsumnachfrage, Ereig
 - Gebäude wachsen weiterhin nur auf gezonten Tiles MIT Strassenanschluss – Zonen ohne angrenzende Strasse bleiben leer (M3-Regel, kein UI-Fix).
 - Golden-Master-Hash unverändert (Szenario zont jedes Tile genau einmal; Farben sind rein visuell).
 **Offen:** nichts.
+
+## 2026-09-05 – M10.0 UI-Shell (App-Frame statt Floating-Panels)
+**Gebaut:** Komplette Neustrukturierung der Oberfläche nach `specs/M10-UI-SHELL.md`. Statt sechs `position: fixed`-Panels in den Bildschirmecken jetzt ein CSS-Grid mit fünf Regionen (`ui/shell.ts`): Topbar (Identität, Kennzahlen, Geschwindigkeit, Datei-Menü, Dock-Umschalter), Werkzeug-Rail links (rendert aus `data/tools.ts`, Symbol + Kürzel), Werkzeug-Optionen als eigene Spalte (Zonentyp/Strassentyp/Tile-Palette; Breite 0, wenn das Werkzeug keine Optionen hat), Canvas als Grid-Zelle, Dock rechts (Minimap + Inspektor), Statusleiste unten (Overlay-Chips, Meldungs-Slot, Hover-/Route-/FPS-Info). `hud.ts` und `stats.ts` entfallen; `main.ts` verdrahtet nur noch.
+**Neu:** Selektionsmodell (`ui/selection.ts`, reine Funktion `resolveSelection`) mit Auswahl-Werkzeug als Startwerkzeug; Inspektor-Registry (`ui/inspector/registry.ts`) mit Tabs je Kontext – Region (Übersicht/Budget/Statistik), Stadt (Übersicht/Wirtschaft/Bevölkerung), Tile (Untergrund/Nutzung inkl. Verschmutzung und Versorgungsnetz, endlich punktgenau ablesbar). Kennzahlen zentral in `ui/metrics.ts`, Zahlenformate in `ui/format.ts`, Design-Tokens in `ui/tokens.css`.
+**Entscheidungen:**
+- Chrome belegt echten Platz statt zu überlagern: nichts verdeckt die Karte, kein z-index, Panels können wachsen, ohne sich zu verdrängen.
+- Ein neues Feature-Panel ist ein Registry-Eintrag, kein Layout-Eingriff (M10-Vorschläge Ereignis-Log und Versorgungs-Panel hängen sich so ein).
+- Nur der sichtbare Tab rechnet; vorher berechnete `updateCityPanel` 4×/s alle Kennzahlen aller Städte.
+- Tastenbelegung: Werkzeuge auf `1`…`7`, Geschwindigkeit auf `[`/`]` und Leertaste. Damit ist der alte Konflikt weg, dass `S` gleichzeitig das Statistik-Panel toggelte und die Karte nach unten schwenkte (Statistik ist jetzt Dock-Tab).
+- `input.ts` verfolgt den Viewport per `ResizeObserver` statt `window.resize`: der Canvas ändert seine Grösse jetzt auch ohne Fensteränderung (Dock/Options ein- und ausklappen).
+- Gefundener CSS-Fallstrick: Komponenten setzen `display: flex/grid` und schlagen damit die UA-Regel für `[hidden]` – ohne `[hidden] { display: none !important }` in `tokens.css` bleiben Datei-Popover, Schulden-Kennzahl und einspaltige Tab-Leiste sichtbar.
+- Sim, Renderer und Savegame-Format unberührt; Golden-Master-Hash unverändert (5e5226f6964efe8d).
+**Nachweis:** 261 Tests grün (19 neue für `resolveSelection`, Registry-Filterung, Zahlenformate), `npm run build` grün, manuell im Browser geprüft: Werkzeugwechsel, Options-Spalte, Stadt- und Tile-Selektion, Overlay-Wechsel, Geschwindigkeit, Dock ein-/ausklappen.
+**Offen:** visuelle Abnahme durch Peter.

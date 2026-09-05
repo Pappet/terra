@@ -1,0 +1,97 @@
+/**
+ * Shell-Layout (M10.0): App-Frame aus CSS-Grid. Der Canvas ist eine Zelle,
+ * kein Vollbild – deshalb kommt in dieser Datei kein `position: fixed` vor
+ * und es gibt keinen z-index-Stapel zwischen Panels.
+ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+}
+
+#app {
+  height: 100%;
+}
+
+.shell {
+  height: 100%;
+  display: grid;
+  grid-template-areas:
+    'topbar topbar  topbar topbar'
+    'rail   options canvas dock'
+    'status status  status status';
+  grid-template-columns: var(--rail-w) var(--options-w) 1fr var(--dock-w);
+  grid-template-rows: var(--topbar-h) 1fr var(--status-h);
+}
+
+/* Ein-/Ausklappen ändert nur Spaltenbreiten – Panels wandern nicht. */
+.shell[data-options='off'] {
+  --options-w: 0px;
+}
+
+.shell[data-dock='off'] {
+  --dock-w: 0px;
+}
+
+.shell-topbar {
+  grid-area: topbar;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.shell-rail {
+  grid-area: rail;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.shell-options {
+  grid-area: options;
+  border-right: 1px solid var(--border);
+  background: var(--surface-2);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.shell-canvas {
+  grid-area: canvas;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.shell-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.shell-dock {
+  grid-area: dock;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shell-status {
+  grid-area: status;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* Eingeklappte Spalten dürfen ihren Inhalt nicht durchdrücken. */
+.shell[data-options='off'] .shell-options,
+.shell[data-dock='off'] .shell-dock {
+  border: 0;
+  visibility: hidden;
+}

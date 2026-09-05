@@ -91,6 +91,17 @@ worldTick.ts; keine Quelldatei über 400 Zeilen), Testlauf stumm (dbg-Reste
 entfernt), FRAGEN.md geschlossen (D007), BACKLOG vollständig triagiert,
 Balance-Werte in src/data, README/ARCHITECTURE.md aktuell.
 
+## M10.0 – UI-Shell (ABGESCHLOSSEN)
+
+Vorgezogen vor die M10-Features, weil diese sonst keinen Ort haben, an dem sie
+erscheinen können. Spezifikation: `specs/M10-UI-SHELL.md`.
+
+DoD erfüllt: App-Frame als CSS-Grid (Topbar, Werkzeug-Rail, Werkzeug-Optionen,
+Canvas, Dock, Statusleiste), kein `position: fixed` mehr im UI-CSS, Selektion
+von Stadt und Tile über das Auswahl-Werkzeug, Inspektor mit Tab-Registry
+(ein neues Panel = ein Registry-Eintrag), Design-Tokens statt Ad-hoc-Farben,
+261 Tests grün, Golden-Master-Hash unverändert.
+
 ## M10 – Vorschlag (aus den Schwächen der Konsolidierung abgeleitet)
 
 Thema: Sichtbarkeit + Wirtschaftliche Tiefe (keine neuen Subsysteme, sondern die
