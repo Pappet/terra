@@ -6,9 +6,10 @@
  * Wasser unpassierbar (Brücken später). Acht Nachbarn, Heuristik: Octile-
  * Distanz × beste Kantenkosten – zulässig, also optimal.
  *
- * Der PathFinder hält einen Ergebnis-Cache, ungültig gemacht über eine
- * Revisionsnummer (World.tileRev): sobald sich Strassen ändern, wird neu
- * gerechnet. DOM-frei und deterministisch (Fester Nachbar- und Tie-Break).
+ * Der PathFinder hält einen Ergebnis-Cache, ungültig gemacht über die
+ * übergebene Revisionsnummer: Sim-Seitig ist das `World.roadRev` (nur
+ * Straßenänderungen ändern Routen, M9.2). DOM-frei und deterministisch
+ * (Fester Nachbar- und Tie-Break).
  */
 import { MOVEMENT, ROAD_BY_ID, TERRAIN_OFFROAD_FACTOR } from '../data/roads';
 

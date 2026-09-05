@@ -10,6 +10,7 @@
  */
 import { GROWTH } from '../data/cities';
 import { MOVEMENT, ROAD_BY_ID } from '../data/roads';
+import { PathFinder } from './pathfinding';
 import type { World } from './world';
 
 export const EMPLOYMENT = {
@@ -48,7 +49,7 @@ interface Route {
   capacity: number;
 }
 
-function travelRoutesFrom(world: World, homeCity: number): Route[] {
+function travelRoutesFrom(world: World, homeCity: number, pf: PathFinder): Route[] {
   const out: Route[] = [];
   const homeIdx = (world.cities.x[homeCity - 1] ?? 0) + (world.cities.y[homeCity - 1] ?? 0) * world.width;
   for (let c = 1; c <= world.cities.count; c++) {
@@ -57,14 +58,14 @@ function travelRoutesFrom(world: World, homeCity: number): Route[] {
       out.push({ cityId: c, time: 0, capacity: Infinity });
       continue;
     }
-    const result = world.pathfinder.findPath(
+    const result = pf.findPath(
       {
         width: world.width,
         height: world.height,
         tiles: world.tiles,
         water: world.layers.water,
         roads: world.roads,
-        rev: world.tileRev,
+        rev: world.roadRev, // eigener Cache-Raum (isolierte PathFinder-Instanz, M9.2)
       },
       homeIdx,
       jobIdx,
@@ -74,6 +75,32 @@ function travelRoutesFrom(world: World, homeCity: number): Route[] {
   }
   out.sort((a, b) => a.time - b.time || a.cityId - b.cityId);
   return out;
+}
+
+/**
+ * Routen-Cache (M9.2): Reisezeiten hängen nur von Straßen und Städtezentren ab.
+ * Der Cache wird pro World über (roadRev, Stadtanzahl) invalidiert und nutzt
+ * eine EIGENE PathFinder-Instanz — damit die roadRev-Keys nicht mit den
+ * tileRev-Keys des geteilten Pfadfinders (Handel/Route-Anzeige) kollidieren.
+ * Ergebnis identisch zur Direktberechnung, aber ohne n² findPath-Aufrufe pro Tick.
+ */
+interface RouteCacheEntry {
+  key: string;
+  routes: Route[][];
+  pf: PathFinder;
+}
+const routeCache = new WeakMap<World, RouteCacheEntry>();
+
+function routesFor(world: World): Route[][] {
+  const key = `${world.roadRev}:${world.cities.count}`;
+  const entry = routeCache.get(world);
+  if (entry !== undefined && entry.key === key) return entry.routes;
+  const pf = new PathFinder();
+  const routes: Route[][] = [];
+  for (let home = 1; home <= world.cities.count; home++) routes.push(travelRoutesFrom(world, home, pf));
+  const fresh = { key, routes, pf };
+  routeCache.set(world, fresh);
+  return fresh.routes;
 }
 
 /** Kleinste Korridorkapazität entlang eines Pfades (Stau-Deckel). */
@@ -92,7 +119,7 @@ export function averageCommuteTime(world: World, homeCity: number): number {
   const flows = world.commute?.flows[homeCity - 1];
   if (flows === undefined) return 0;
   const routes = new Map<number, number>();
-  for (const route of travelRoutesFrom(world, homeCity)) {
+  for (const route of routesFor(world)[homeCity - 1] ?? []) {
     routes.set(route.cityId, route.time);
   }
   let weighted = 0;
@@ -115,11 +142,12 @@ export function assignWorkers(world: World): EmploymentState {
   const employed: number[] = new Array<number>(n).fill(0);
   const unemployed: number[] = new Array<number>(n).fill(0);
   for (let c = 1; c <= n; c++) openJobs.push(jobsOf(world, c));
+  const allRoutes = routesFor(world);
 
   for (let home = 1; home <= n; home++) {
     const workforce = world.population.workforce(home) * EMPLOYMENT.participationRate;
     let remaining = workforce;
-    for (const route of travelRoutesFrom(world, home)) {
+    for (const route of allRoutes[home - 1] ?? []) {
       if (remaining <= 0) break;
       const jobCity = route.cityId;
       const available = openJobs[jobCity - 1] ?? 0;

@@ -139,6 +139,12 @@ export class World {
   upkeepPerTick = 0;
   /** Erhöht sich bei jeder Änderung an sichtbaren Layerdaten (tiles/roads). */
   tileRev = 0;
+  /**
+   * Erhöht sich NUR bei Straßenänderungen (M9.2): Cache-Key für
+   * Reisezeit-Pfade — Gebäude ändern keine Routen, daher darf der
+   * Pfad-Cache von Bauaktivität unberührt bleiben.
+   */
+  roadRev = 0;
 
   private rng: Rng;
   /** A*-Cache-Instanz (öffentlich: employment liest Reisezeiten). */
@@ -150,7 +156,30 @@ export class World {
   private pollutionDirty = true;
   /** Straßen/Städte haben sich geändert -> Versorgung neu berechnen (M8.4). */
   private supplyDirty = true;
+  /** Profiling-Akkumulator (M9.2, nur Diagnose): null = aus. */
+  private profile: Record<string, number> | null = null;
   private queue: GameAction[] = [];
+
+  /** Subsystem-Zeiten akkumulieren (M9.2 Perf-Gate). */
+  startProfiling(): void {
+    this.profile = {};
+  }
+
+  /** Akkumulierte Subsystem-Zeiten (ms) lesen und Profiling beenden. */
+  stopProfiling(): Record<string, number> {
+    const p = this.profile ?? {};
+    this.profile = null;
+    return p;
+  }
+
+  /** Misst fn, wenn Profiling an (sonst direkter Aufruf, kein Overhead). */
+  private measure<T>(key: string, fn: () => T): T {
+    if (this.profile === null) return fn();
+    const t0 = performance.now();
+    const result = fn();
+    this.profile[key] = (this.profile[key] ?? 0) + (performance.now() - t0);
+    return result;
+  }
 
   constructor(seed: number, width: number, height: number) {
     this.seed = seed >>> 0;
@@ -286,6 +315,7 @@ export class World {
       this.recomputeUpkeep(); // wirkt ab dem nächsten Tick
       this.commuteDirty = true;
       this.supplyDirty = true;
+      this.roadRev++; // Pfad-Cacheinvalidierung nur für Straßen (M9.2)
     }
     if (routeDirty && this.routeRequest !== null) {
       const { from, to } = this.routeRequest;
@@ -300,18 +330,19 @@ export class World {
             : { path: result.path, timeTicks: result.timeTicks, rev: this.tileRev };
       }
     }
-    // M8.4: Versorgung aus Zentren + Straßennetz (nach Actions, vor Wachstum)
-    if (this.supplyDirty) {
-      recomputeSupply(this);
-      this.supplyDirty = false;
-    }
-    // M8.3: Verschmutzung aus Industriebestand neu stempeln
-    if (this.pollutionDirty) {
-      recomputePollution(this);
-      this.pollutionDirty = false;
-    }
-    runGrowthTick(this, this.rng);
-    if (runDemographicsTick(this, this.rng, this.tick + 1)) { // abschliessender Tick
+    // M8.4/M8.3: abgeleitete Layer (Versorgung, Verschmutzung) neu, vor Wachstum
+    this.measure('networks', () => {
+      if (this.supplyDirty) {
+        recomputeSupply(this);
+        this.supplyDirty = false;
+      }
+      if (this.pollutionDirty) {
+        recomputePollution(this);
+        this.pollutionDirty = false;
+      }
+    });
+    this.measure('growth', () => runGrowthTick(this, this.rng));
+    if (this.measure('demographics', () => runDemographicsTick(this, this.rng, this.tick + 1))) { // abschliessender Tick
       runMigration(this, this.rng);
       this.commuteDirty = true;
       runEventTick(this, this.rng); // M8.5: Ereignisse deterministisch im Intervall
@@ -320,11 +351,12 @@ export class World {
     // Arbeitsplatz-Zuweisung bei jeder relevanten Änderung (Städte, Gebäude,
     // Bevölkerung, Strassen) – sonst bleibt die letzte Zuweisung stehen.
     if (this.commuteDirty) {
-      this.commute = assignWorkers(this);
+      this.commute = this.measure('employment', () => assignWorkers(this));
       this.commuteDirty = false;
     }
-    updateMarket(this, runProductionTick(this));
-    runTradeTick(this);
+    const flows = this.measure('production', () => runProductionTick(this));
+    this.measure('market', () => updateMarket(this, flows));
+    this.measure('trade', () => runTradeTick(this));
     this.tick++;
   }
 
@@ -369,7 +401,7 @@ export class World {
       buildingIndex: this.buildingIndex,
       cityZoneTiles: this.cityZoneTiles,
       currentTick: this.currentTick,
-      rev: this.tileRev,
+      rev: this.roadRev, // Cache-Key: nur Straßenänderungen invalidieren Pfade
       treasury: this.treasury,
       taxRate: this.taxRate,
       debt: this.debt,

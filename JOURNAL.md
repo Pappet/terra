@@ -1,5 +1,14 @@
 # JOURNAL
 
+## 2026-03-05 – M9.2 Perf-Gate mit echter Last (+ zwei Optimierungen, Verhalten unverändert)
+**Gebaut:** perf.test.ts ersetzt den M5.5-Test: 512er-Karte, bis zu 40 Städte mit Straßengrid + Zonen (ein Action-Batch), per Simulation auf **6326 Gebäude / 20434 Einwohner** gewachsen; dann 500 Ticks gemessen mit Subsystem-Profiling (`World.startProfiling/stopProfiling`, measure()-Wrapper in update()). Ergebnisse: **1.011 ms/Tick avg, 4.467 ms max** (Budget 16) — Wachstum 0.269, Produktion 0.273, Handel 0.436, Markt 0.011, Demografie 0.010, Beschäftigung 0.001, Netze 0.000 ms/Tick. **Entscheidung: kein Web Worker nötig** — der Gesamttick liegt 16× unter dem Frame-Budget, selbst der teuerste Intervall-Tick bei 4.5 ms.
+**Optimierungen (Golden-Master-Hash unverändert, siehe M9.1-Regel):**
+- `World.roadRev`: Pfad-Caches werden nur noch bei Straßenänderungen invalidiert, nicht bei jedem Gebäudebau (tileRev bleibt Renderer-Bookkeeping). Vorher: der Handel rechnete bei Wachstum ALLE Städtepaar-A* pro Tick neu (287 ms/Tick!); nachher 2 s für 700 Wachstums-Ticks statt 202 s.
+- Routen-Cache in employment.ts (WeakMap pro World, Key roadRev+Stadtanzahl) mit EIGENER PathFinder-Instanz — n² findPath-Aufrufe pro Tick entfallen.
+**Bug dabei aufgedeckt (durch Golden-Master-Differenz, Ursache statt Referenz angepasst):** Die roadRev-Keys kollidierten zunächst mit den tileRev-Keys des geteilten Pfadfinders (Handel cachede „rev=1" ohne Straßen, Employment las sie als „roadRev=1" mit Straßen) → falsche Pendelzeiten → Hash-Änderung. Fix: isolierte PathFinder-Instanz für Employment.
+**Lehren:** Cache-Keys mit numerischen Revisionsnummern mehrerer Zähler dürfen niemals einen gemeinsamen Keyraum teilen. Das Perf-Szenario braucht ~24+ Städte (Kapazität ~850/city, begrenzt durch Radius-14-Zonierung); 28er-Blöcke mit ≥90 % Land sind auf der Seed-42-Karte knapp.
+**Offen:** nichts.
+
 ## 2026-03-05 – M8 Tiefe komplett (Bodenwert/Bildung/Verschmutzung/Netze/Ereignisse)
 **Gebaut:** M8 vollständig abgeschlossen, 241 Tests grün, Build grün.
 - **M8.1 Bodenwert:** `computeLandValue` (landvalue.ts, Fruchtbarkeit + Fluss/Küsten-Bonus, Konstanten nach `data/landvalue.ts`); Kopplung `MIGRATION.weightLand` (0.1, symmetrisch um neutral 0.5) in `computeSatisfaction`. Erster Versuch mit 0.2 verschob vier Bestandstests; mit 0.1 + Neutralwert-Fallback für Fakes blieb nur ein Test offen (reine Alterung), der jetzt mit Kapazitätspuffer Migration-frei ist.

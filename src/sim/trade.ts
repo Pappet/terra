@@ -97,7 +97,7 @@ export function runTradeTick(world: World): void {
           tiles: world.tiles,
           water: world.layers.water,
           roads: world.roads,
-          rev: world.tileRev,
+          rev: world.roadRev, // Routen hängen nur von Straßen ab — Bauaktivität invalidiert nicht (M9.2)
         },
         centerIdx(world, a),
         centerIdx(world, b),
