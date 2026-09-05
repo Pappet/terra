@@ -1,5 +1,20 @@
 # JOURNAL
 
+## 2026-03-05 – M9.10 Abnahme: PROJEKT ABGESCHLOSSEN
+**Prüfung am Stück (protokolliert):**
+- ✅ 241 Tests grün, Testlauf ohne Fremdausgabe (nur bewusstes [perf]-Diagnoselog).
+- ✅ `npm run build` grün (74.38 kB JS gzip 24.91 kB).
+- ✅ Golden-Master-Hash identisch zu M9.1: `5e5226f6964efe8d` — alle M9-Umbauten
+  (Serialisierungs-Split, Tick-Split, roadRev, Routen-Cache, Balance-Züge) verhaltensneutral.
+- ✅ Keine Quelldatei über 400 Zeilen (grösste: hud.ts/world.ts mit 340).
+- ✅ FRAGEN.md leer (D007), BACKLOG vollständig triagiert (2 verworfen, 2 → M10).
+- ✅ Perf-Zahlen bei realer Last dokumentiert (M9.2): 1.011 ms/Tick avg, 4.467 ms max
+  bei 6326 Gebäuden / 20434 Einwohnern → **kein Web Worker**, mit Zahlen begründet.
+- ✅ README + ARCHITECTURE.md aktuell (Tick-Reihenfolge, Leser/Schreiber, Regeln).
+**Danach:** M10-Vorschlag in PLAN.md geschrieben (Overlays für M8-Layer, Handel-Skalierung,
+Einkommens-Mobilität, Pendler-Visualisierung, dynamische Konsumnachfrage, Ereignis-Log).
+**Offen:** nichts — M0–M9 abgeschlossen.
+
 ## 2026-03-05 – M9.2 Perf-Gate mit echter Last (+ zwei Optimierungen, Verhalten unverändert)
 **Gebaut:** perf.test.ts ersetzt den M5.5-Test: 512er-Karte, bis zu 40 Städte mit Straßengrid + Zonen (ein Action-Batch), per Simulation auf **6326 Gebäude / 20434 Einwohner** gewachsen; dann 500 Ticks gemessen mit Subsystem-Profiling (`World.startProfiling/stopProfiling`, measure()-Wrapper in update()). Ergebnisse: **1.011 ms/Tick avg, 4.467 ms max** (Budget 16) — Wachstum 0.269, Produktion 0.273, Handel 0.436, Markt 0.011, Demografie 0.010, Beschäftigung 0.001, Netze 0.000 ms/Tick. **Entscheidung: kein Web Worker nötig** — der Gesamttick liegt 16× unter dem Frame-Budget, selbst der teuerste Intervall-Tick bei 4.5 ms.
 **Optimierungen (Golden-Master-Hash unverändert, siehe M9.1-Regel):**

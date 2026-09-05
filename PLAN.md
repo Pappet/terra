@@ -82,8 +82,37 @@ Tasks: M8.1 Bodenwert (computeLandValue + weightLand-Kopplung) · M8.2 Bildung
 Fruchtbarkeit + Zufriedenheitsmalus) · M8.4 Netze (BFS über Straßen, Rate-Faktor) ·
 M8.5 Ereignisse (Brand/Missernte im Intervall) · M8.6 Rückkopplungs-Nachweise.
 
-## M9 – Konsolidierung (nach M8, benutzergelieferte Spec)
+## M9 – Konsolidierung (ABGESCHLOSSEN)
 
-specs/M9-KONSOLIDIERUNG.md (von Peter): nach Abschluss und DoD-Nachweis von M8
-zerlegen und abarbeiten. Grundregel: keine neuen Features, Verhaltensänderungen nur
-wo eine Task es verlangt, zuerst Golden Master (M9.1) vor Umbauten.
+DoD erfüllt: Golden Master (Referenz-Hash 5e5226f6964efe8d, Test golden.test.ts),
+Perf-Gate mit echter Last (6326 Gebäude / 20434 Einwohner: 1.011 ms/Tick avg,
+4.467 ms max — kein Web Worker nötig), world.ts aufgeteilt (worldSerialize.ts,
+worldTick.ts; keine Quelldatei über 400 Zeilen), Testlauf stumm (dbg-Reste
+entfernt), FRAGEN.md geschlossen (D007), BACKLOG vollständig triagiert,
+Balance-Werte in src/data, README/ARCHITECTURE.md aktuell.
+
+## M10 – Vorschlag (aus den Schwächen der Konsolidierung abgeleitet)
+
+Thema: Sichtbarkeit + Wirtschaftliche Tiefe (keine neuen Subsysteme, sondern die
+vorhandenen erlebbar machen und endgültig ausbalancieren).
+
+1. **Overlays für die M8-Layer** (höchste Priorität): Verschmutzung und
+   Versorgungsnetze sind simuliert, getestet und wirken — aber unsichtbar.
+   Overlay-Farbtabellen in data/overlays.ts, Renderer-Kanäle wie bei den
+   M1-Overlays; ggf. Stadt-Panel um Schulen/Jobs/Versorgungsquote ergänzen.
+2. **Handel skalieren:** runTradeTick ist O(städtepaare × Güter) pro Tick
+   (M9.2-Messung: 0.436 ms bei ~24 Städten, quadratisches Wachstum). Bei 60+
+   Städten dominieren — Paar-Pruning nach Distanz/Erreichbarkeit (deterministisch,
+   Golden Master ändert sich → eigene Task mit neuer Referenz).
+3. **Einkommens-Mobilität** (BACKLOG-Rest M4.2): Einkommensgruppe dynamisch an
+   Beschäftigung/Bildung koppeln; Geburtenverteilung daran anbinden.
+4. **Einzelagenten-Visualisierung der Pendler** (BACKLOG, ab M9 erlaubt): reine
+   Render-Option über die bestehenden `commute.flows`.
+5. **Konsumnachfrage dynamisieren:** baselineDemand der Güter an reale
+   Bevölkerungsgrösse koppeln (aktuell konstant), Preise reagieren dann auf
+   Wachstum — Balance-Arbeit in data/goods.ts.
+6. **Ereignisse erlebbar machen:** Ereignis-Log/Toast + optionaler Schutz über
+   Versorgungsgrad (Rückkopplung Netz → Brandrisiko).
+
+Regelvorschlag wie gehabt: pro Task ein Commit mit DoD-Nachweis, Golden Master
+bei Verhaltensänderungen neu erzeugen und begründen.
