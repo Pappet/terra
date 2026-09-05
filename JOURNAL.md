@@ -1,5 +1,14 @@
 # JOURNAL
 
+## 2026-03-05 – M7.3/M7.4 Kredite + Bankrott
+**Gebaut:** `takeLoan`/`repayLoan`-Actions (Kreditlimit = maxDebtPerAdult × Erwachsene, Tilgung pay = min(Betrag, Schuld, Kasse)), Zins kapitalisiert pro Intervall (5 %), Bankrott-Prüfung in **jeden** update() (Kasse < −100 → bankrupt: kein Bau/Zonen; Erholung ab Kasse ≥ 0), `computeMaxDebt` läuft in jeden update (Actions brauchen das Limit sofort, nicht erst zum Intervall), Steuerlast senkt Zufriedenheit (−taxBurden 0.3 bei Volllast) — der M7.7-Ruin-Hebel. Tests isoliert (Berater-Hinweis): taxRate 0, keine Gebäude/Straßen → treasury = f(Kredite) exakt; Limit- und Tilgungsfälle separat. 218 Tests grün.
+**Entscheidungen + Lehren:**
+- Zins kapitalisiert (Schuld wächst) statt sofortiger Kassenbelastung — beides gebucht, Saldo treasury+debt bleibt ohne Unterhalt konstant (getestet).
+- Bankrott-Prüfung pro Tick statt im Intervall: Zustands-Flag muss immer stimmen (Actions fragen es ab).
+- maxDebt pro Update statt pro Intervall: Action-Kontext braucht aktuelle Limits.
+- Berater-Hinweis exakt befolgt: exakte Kassen-Assertions nur auf isolierter Mechanik; Live-Sim-Assertions bleiben Bereichs-/Richtungschecks.
+**Offen:** M7.2 Budget-Panel, M7.5 Statistiken, M7.6 UI-State-Save, M7.7 Ruin-Nachweis.
+
 ## 2026-03-05 – M7.1 Steuersatz-Steuerung
 **Gebaut:** `setTaxRate`-Action (0..1, ungültig → lastRejected), `World.taxRate` (Savegame **v10**), Steuern in der Demografie × taxRate, HUD: Steuer-Buttons 0/25/50/75/100 % oben rechts. Tests: Satz 0 → keine Einnahmen, 0.5 → exakt halbe Brutto-Einnahmen, Ablehnung ungültiger Sätze, Roundtrip v10, Determinismus. 212 Tests grün.
 **Entscheidungen:**
