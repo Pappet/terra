@@ -75,3 +75,6 @@ Tasks:
 DoD: Strom- und Wassernetz, Verschmutzung und Umwelt, Bildung, Migration zwischen
 Städten, Ereignisse/Katastrophen, Bodenwert. Jedes Subsystem hat mindestens eine
 Rückkopplung in ein anderes.
+
+Hinweis: specs/M9-KONSOLIDIERUNG.md (benutzergeliefert) enthält Material für die
+Nach-dem-M8-Phase — wird bei der M8/M9-Zerlegung berücksichtigt.
