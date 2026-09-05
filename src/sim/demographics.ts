@@ -5,8 +5,10 @@
  * versorgung, Pendelzeit und Wohnraum steuert Zuzug und Wegzug.
  * Deterministisch über den Welt-RNG.
  */
-import { DEMOGRAPHICS, MIGRATION } from '../data/demographics';
+import { DEMOGRAPHICS, MIGRATION, EDUCATION } from '../data/demographics';
 import { FINANCE, GROWTH } from '../data/cities';
+import { RECIPE_SCHOOL } from '../data/goods';
+import { POLLUTION } from '../data/pollution';
 import {
   AGE_BRACKETS,
   AGE_TICK_INTERVAL,
@@ -16,8 +18,21 @@ import {
 } from './population';
 import { averageCommuteTime } from './employment';
 import { computeLandValue } from './landvalue';
+import { averagePollution } from './pollution';
 import type { Rng } from './rng';
 import type { World } from './world';
+
+/** Schulen einer Stadt zählen (M8.2: Rezept RECIPE_SCHOOL an C-Gebäuden). */
+function countSchools(world: World, cityId: number): number {
+  let schools = 0;
+  for (let i = 0; i < world.buildings.count; i++) {
+    if (world.buildings.cityId[i] !== cityId) continue;
+    if ((world.buildings.recipe[i] ?? -1) !== RECIPE_SCHOOL) continue;
+    schools++;
+    if (schools >= EDUCATION.maxSchoolsCounted) break;
+  }
+  return schools;
+}
 
 function housesOf(world: World, cityId: number): number {
   let houses = 0;
@@ -95,6 +110,17 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
     if (vec === null) continue;
     const next = new Float64Array(vec.length);
 
+    // M8.2: Schulangebot erhöht die Bildungschancen dieser Stadt
+    const schools = countSchools(world, cityId);
+    const childChance = Math.min(
+      1,
+      DEMOGRAPHICS.childEducationChance + schools * EDUCATION.childBonusPerSchool,
+    );
+    const higherChance = Math.min(
+      1,
+      DEMOGRAPHICS.higherEducationChance + schools * EDUCATION.higherBonusPerSchool,
+    );
+
     // 1) Alterung mit Bildungswanderung und Sterbefällen
     for (let e = 0; e < EDUCATION_LEVELS; e++) {
       for (let inc = 0; inc < INCOME_LEVELS; inc++) {
@@ -111,9 +137,9 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
           }
           let newEdu = e;
           if (age === 0) {
-            newEdu = rng.chance(DEMOGRAPHICS.childEducationChance) ? Math.max(1, e) : e;
+            newEdu = rng.chance(childChance) ? Math.max(1, e) : e;
           } else if (age === 1) {
-            if (rng.chance(DEMOGRAPHICS.higherEducationChance)) newEdu = Math.min(EDUCATION_LEVELS - 1, e + 1);
+            if (rng.chance(higherChance)) newEdu = Math.min(EDUCATION_LEVELS - 1, e + 1);
           }
           const target = cohortIndex(age + 1, newEdu, inc);
           next[target] = (next[target] ?? 0) + survivors;
@@ -215,6 +241,8 @@ export function computeSatisfaction(world: World, cityId: number): number {
   // M8.1-Rückkopplung: Bodenwert (Lage) verschiebt die Zufriedenheit symmetrisch.
   const landBonus =
     MIGRATION.weightLand * (computeLandValue(world, cityId) - MIGRATION.landValueNeutral);
+  // M8.3-Rückkopplung: Verschmutzung im Stadtgebiet drückt die Zufriedenheit.
+  const pollutionPenalty = POLLUTION.satisfactionWeight * averagePollution(world, cityId);
   return Math.min(
     1,
     Math.max(
@@ -223,7 +251,8 @@ export function computeSatisfaction(world: World, cityId: number): number {
         MIGRATION.weightCommute * commuteScore +
         MIGRATION.weightHousing * housingScore -
         taxBurden +
-        landBonus,
+        landBonus -
+        pollutionPenalty,
     ),
   );
 }

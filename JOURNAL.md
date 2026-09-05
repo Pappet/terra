@@ -1,5 +1,20 @@
 # JOURNAL
 
+## 2026-03-05 – M8 Tiefe komplett (Bodenwert/Bildung/Verschmutzung/Netze/Ereignisse)
+**Gebaut:** M8 vollständig abgeschlossen, 241 Tests grün, Build grün.
+- **M8.1 Bodenwert:** `computeLandValue` (landvalue.ts, Fruchtbarkeit + Fluss/Küsten-Bonus, Konstanten nach `data/landvalue.ts`); Kopplung `MIGRATION.weightLand` (0.1, symmetrisch um neutral 0.5) in `computeSatisfaction`. Erster Versuch mit 0.2 verschob vier Bestandstests; mit 0.1 + Neutralwert-Fallback für Fakes blieb nur ein Test offen (reine Alterung), der jetzt mit Kapazitätspuffer Migration-frei ist.
+- **M8.2 Bildung:** Schulrezept (C, `RECIPE_SCHOOL`), `countSchools` (Cap `EDUCATION.maxSchoolsCounted`) erhöht `childEducationChance`/`higherEducationChance` je Stadt; Rückkopplung Bildung → Kohorten → Einkommen/Steuern.
+- **M8.3 Verschmutzung:** `pollution`-Layer (abgeleitet, nicht serialisiert), Falloff-Stempel je Industriegebäude bei Bestandsänderung; `effectiveFertility` ist die Lese-API für Farm-Rezept UND Bodenwert; Malus `POLLUTION.satisfactionWeight` in computeSatisfaction.
+- **M8.4 Netze:** `supply`-Layer (abgeleitet): BFS vom Stadtzentrum über Straßen, 1-Halo versorgt; Gebäude ohne Anschluss produzieren mit `NETWORKS.unsuppliedRateFactor` (0.5). Neu-Berechnung bei Straßenänderungen/Gründung/Laden.
+- **M8.5 Ereignisse:** `runEventTick` im Demografie-Intervall (nur echtes World.update, Fakes bleiben ereignisfrei): Brand (condition-Schlag an Zufallsgebäude) / Missernte (Nahrungs-Lager-Schlag), deterministisch über den Welt-RNG.
+- **M8.6 Nachweis:** m8.proof.test.ts — drei Rückkopplungen differential getestet (Bodenwert→Zuzug, Schule→Bildungsquote, Verschmutzung→Fruchtbarkeit/Bodenwert/Zufriedenheit). Neue Subsystem-Tests: networks/pollution/education/events.
+**Entscheidungen + Lehren:**
+- Verschmutzung/Versorgung als abgeleitete Layer (aus Gebäuden/Straßen rekonstruierbar): KEIN Savegame-Versionsbump nötig, Laden rechnet neu — gleiche Muster wie buildingIndex.
+- Kohorten sind aggregierte Buckets: ein `rng.chance`-Draw entscheidet über den GANZEN Bucket. Bildungs-Tests brauchen Kinder in mehreren Einkommens-Buckets und einen Seed mit failendem Draw (Rng(4)), sonst ist der Differential-Nachweis zufällig 0.
+- 64er-Testkarten sind ungeeignet (Stadtgründung am Rand abgelehnt, Fruchtbarkeit ~0): M8-Tests nutzen 128er-Karten mit 16-Tile-Randabstand (`landRun`-Helper).
+- computeSatisfaction klemmt an 0/1: Differential-Tests müssen Zufriedenheitsszenarien wählen, die nicht an der Klemme liegen (Häuser gegen Wegzug, Steuersatz 0 gegen Zuzug).
+**Offen:** nichts — M9 Konsolidierung nach specs/M9-KONSOLIDIERUNG.md.
+
 ## 2026-03-05 – M7.6 UI-Zustand im Savegame + M7-Abschluss
 **Gebaut:** `withUi`/`readUi` in persist/save.ts (UI-Zustand {speed, overlay} als optionaler `ui`-Block im Savegame-JSON, ungültige Werte neutralisiert), `saveToBrowser`/`exportToFile` betten den Zustand ein, `loadFromBrowser`/`importFromFile` liefern `{world, ui}`, main.ts wendet Speed/Overlay nach dem Laden an. Tests: Einbetten/Rücklesen, Neutralisierung, Weltanteil unverändert. 223 Tests grün, Build grün. **M7 ist damit fertig — alle DoD erfüllt inkl. Steuersatz, Kredite, Bankrott, Statistiken, UI-Zustand.**
 **Entscheidungen:**

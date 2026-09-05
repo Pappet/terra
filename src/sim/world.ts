@@ -23,6 +23,9 @@ import { assignWorkers, type EmploymentState } from './employment';
 import { runProductionTick } from './production';
 import { Market, updateMarket } from './market';
 import { createTradeState, runTradeTick, ensureTradeSize } from './trade';
+import { recomputePollution } from './pollution';
+import { recomputeSupply } from './networks';
+import { runEventTick } from './events';
 import { FINANCE } from '../data/cities';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
@@ -98,6 +101,10 @@ export class World {
   zoneCity: Int16Array;
   /** Gebäude-ID pro Tile (0 = keins). */
   buildingIndex: Int32Array;
+  /** Verschmutzung pro Tile 0..255 (M8.3, abgeleitet aus Industriegebäuden). */
+  pollution: Uint8Array;
+  /** Netzversorgung pro Tile 0/1 (M8.4, abgeleitet aus Zentren + Straßennetz). */
+  supply: Uint8Array;
   /** Pro Stadt (Index Stadt-ID - 1): gezonte, noch unbebaute Tile-Indizes. */
   cityZoneTiles: number[][];
   /** Bevölkerung als Kohorten pro Stadt. */
@@ -139,6 +146,10 @@ export class World {
   /** Aktuelle Pendler-/Beschäftigungs-Zuweisung (abgeleitet, nicht serialisiert). */
   commute: EmploymentState | null = null;
   private commuteDirty = true;
+  /** Gebäudebestand hat sich geändert -> Verschmutzung neu stempeln (M8.3). */
+  private pollutionDirty = true;
+  /** Straßen/Städte haben sich geändert -> Versorgung neu berechnen (M8.4). */
+  private supplyDirty = true;
   private queue: GameAction[] = [];
 
   constructor(seed: number, width: number, height: number) {
@@ -158,6 +169,8 @@ export class World {
     this.zoneType = new Uint8Array(width * height);
     this.zoneCity = new Int16Array(width * height);
     this.buildingIndex = new Int32Array(width * height);
+    this.pollution = new Uint8Array(width * height);
+    this.supply = new Uint8Array(width * height);
     this.cityZoneTiles = [];
     this.population = new Population();
     this.storage = new Storage();
@@ -192,6 +205,7 @@ export class World {
     this.removeFromZoneTiles(cityId, idx);
     this.tileRev++;
     this.commuteDirty = true;
+    this.pollutionDirty = true;
     return id;
   }
 
@@ -234,6 +248,7 @@ export class World {
     }
     this.tileRev++;
     this.commuteDirty = true;
+    this.pollutionDirty = true;
   }
 
   /** Action einreihen; sie greift zu Beginn des nächsten update(). */
@@ -258,7 +273,10 @@ export class World {
       for (const action of this.queue) {
         applyAction(this, action);
         if (action.kind === 'buildRoad' || action.kind === 'demolishRoad') roadsChanged = true;
-        if (action.kind === 'foundCity') this.commuteDirty = true;
+        if (action.kind === 'foundCity') {
+          this.commuteDirty = true;
+          this.supplyDirty = true;
+        }
         if (action.kind === 'requestRoute' || action.kind === 'clearRoute') routeDirty = true;
       }
       this.tileRev++;
@@ -267,6 +285,7 @@ export class World {
     if (roadsChanged) {
       this.recomputeUpkeep(); // wirkt ab dem nächsten Tick
       this.commuteDirty = true;
+      this.supplyDirty = true;
     }
     if (routeDirty && this.routeRequest !== null) {
       const { from, to } = this.routeRequest;
@@ -281,10 +300,21 @@ export class World {
             : { path: result.path, timeTicks: result.timeTicks, rev: this.tileRev };
       }
     }
+    // M8.4: Versorgung aus Zentren + Straßennetz (nach Actions, vor Wachstum)
+    if (this.supplyDirty) {
+      recomputeSupply(this);
+      this.supplyDirty = false;
+    }
+    // M8.3: Verschmutzung aus Industriebestand neu stempeln
+    if (this.pollutionDirty) {
+      recomputePollution(this);
+      this.pollutionDirty = false;
+    }
     runGrowthTick(this, this.rng);
     if (runDemographicsTick(this, this.rng, this.tick + 1)) { // abschliessender Tick
       runMigration(this, this.rng);
       this.commuteDirty = true;
+      runEventTick(this, this.rng); // M8.5: Ereignisse deterministisch im Intervall
     }
     this.syncPopulation();
     // Arbeitsplatz-Zuweisung bei jeder relevanten Änderung (Städte, Gebäude,
@@ -506,6 +536,8 @@ export class World {
     world.tick = tick;
     world.rebuildCityZoneTiles();
     world.recomputeUpkeep();
+    recomputeSupply(world); // abgeleitete M8-Layer neu (nicht serialisiert)
+    recomputePollution(world);
     world.commute = assignWorkers(world);
     world.rng = Rng.fromState(asUint32(d.rngState, 'rngState'));
     return world;

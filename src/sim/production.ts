@@ -10,13 +10,17 @@
  */
 import { RECIPES, RECIPE_BY_ID, type Recipe, type RecipeRequirement } from '../data/goods';
 import { FINANCE } from '../data/cities';
+import { NETWORKS } from '../data/networks';
+import { effectiveFertility } from './pollution';
+import { isSupplied } from './networks';
 import type { TickFlows } from './market';
 import type { World } from './world';
 
 /** Prüft eine Umgebungsbedingung (D006) am Gebäude-Tile. */
 export function requirementMet(world: World, idx: number, req: RecipeRequirement): boolean {
   if (req.kind === 'fertility') {
-    return (world.layers.fertility[idx] ?? 0) / 255 >= (req.min ?? 0);
+    // M8.3: Verschmutzung senkt die effektive Fruchtbarkeit
+    return effectiveFertility(world, idx) >= (req.min ?? 0);
   }
   const width = world.width;
   const x = idx % width;
@@ -75,7 +79,11 @@ export function runProductionTick(world: World): Map<number, TickFlows> {
       if (recipe === undefined) continue;
       const allotted = Math.min(workers, recipe.workers);
       workers -= allotted;
-      const rate = allotted / recipe.workers;
+      // M8.4: Gebäude ohne Netzanschluss produzieren mit reduzierter Rate
+      const bx = world.buildings.x[i] as number;
+      const by = world.buildings.y[i] as number;
+      const supplyFactor = isSupplied(world, by * world.width + bx) ? 1 : NETWORKS.unsuppliedRateFactor;
+      const rate = (allotted / recipe.workers) * supplyFactor;
 
       // Engpass: jeder fehlende Input stoppt die Produktion komplett
       let inputsOk = true;

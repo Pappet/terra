@@ -15,6 +15,19 @@ export const DEMOGRAPHICS = {
 } as const;
 
 /**
+ * Bildung (M8.2): Schulgebäude erhöhen die Bildungschancen der Kohorten.
+ * Rückkopplung: Bildung -> Einkommensgruppe bei Geburt/Zuzug -> Steueraufkommen.
+ */
+export const EDUCATION = {
+  /** Bonus auf childEducationChance pro gezählter Schule. */
+  childBonusPerSchool: 0.05,
+  /** Bonus auf higherEducationChance pro gezählter Schule. */
+  higherBonusPerSchool: 0.05,
+  /** Maximal gezählte Schulen pro Stadt (mehr Schulen bringen nichts). */
+  maxSchoolsCounted: 2,
+} as const;
+
+/**
  * Migration (M4.5): Zuzug bei hoher Zufriedenheit (in freie Wohnkapazität),
  * Wegzug bei niedriger. Zufriedenheit gewichtet Jobs, Pendelzeit, Wohnraum.
  */

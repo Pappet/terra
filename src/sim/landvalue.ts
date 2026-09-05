@@ -5,6 +5,7 @@
  */
 import { CITIES } from '../data/cities';
 import { LANDVALUE } from '../data/landvalue';
+import { effectiveFertility } from './pollution';
 import type { World } from './world';
 
 export function computeLandValue(world: World, cityId: number): number {
@@ -24,7 +25,8 @@ export function computeLandValue(world: World, cityId: number): number {
       const y = cy + dy;
       if (x < 0 || y < 0 || x >= world.width || y >= world.height) continue;
       const idx = y * world.width + x;
-      sum += (fertility[idx] ?? 0) / 255;
+      // M8.3-Rückkopplung: Verschmutzung senkt den effektiven Bodenwert
+      sum += effectiveFertility(world, idx);
       n++;
       if (water !== undefined && (water[idx] ?? 0) === 1) waterBonus = Math.max(waterBonus, LANDVALUE.coastBonus);
       if (river !== undefined && (river[idx] ?? 0) === 1) waterBonus = Math.max(waterBonus, LANDVALUE.riverBonus);

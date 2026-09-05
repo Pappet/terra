@@ -73,6 +73,11 @@ export const RECIPES: readonly Recipe[] = [
   { id: 5, name: 'Werkstatt', buildingType: 3, workers: 5, input: [{ good: 4, amount: 1.5 }, { good: 3, amount: 1.5 }], output: { good: 5, amount: 1 }, requires: null },
   // Konsumstufe (C): Markt verzehrt Nahrung
   { id: 6, name: 'Markt', buildingType: 2, workers: 3, input: [{ good: 0, amount: 2 }], output: { good: 0, amount: 0 }, requires: null },
+  // Bildung (M8.2, C): Schule bildet Kohorten über die Demografie weiter
+  { id: 7, name: 'Schule', buildingType: 2, workers: 2, input: [], output: { good: 0, amount: 0 }, requires: null },
 ];
+
+/** Rezept-ID der Schule (Bildungssystem, M8.2). */
+export const RECIPE_SCHOOL = 7;
 
 export const RECIPE_BY_ID = new Map<number, Recipe>(RECIPES.map((r) => [r.id, r]));

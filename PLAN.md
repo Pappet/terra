@@ -70,11 +70,17 @@ Tasks:
 - [x] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay) — withUi/readUi, Savegame erweitert ohne Versionsbump
 - [x] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (m7.proof.test.ts, deterministisch)
 
-## M8 – Tiefe (nächster Meilenstein, noch nicht zerlegt)
+## M8 – Tiefe (ABGESCHLOSSEN)
 
-DoD: Strom- und Wassernetz, Verschmutzung und Umwelt, Bildung, Migration zwischen
-Städten, Ereignisse/Katastrophen, Bodenwert. Jedes Subsystem hat mindestens eine
-Rückkopplung in ein anderes.
+DoD erfüllt: Bodenwert koppelt in Zufriedenheit/Bau, Bildung reagiert auf
+Schulgebäude, Verschmutzung senkt Fruchtbarkeit/Zufriedenheit, Versorgungsnetze
+über den Straßengraph deckeln die Produktionsrate, Ereignisse (Brand/Missernte)
+deterministisch über den Welt-RNG. Jedes Subsystem hat mindestens eine getestete
+Rückkopplung (m8.proof.test.ts).
+Tasks: M8.1 Bodenwert (computeLandValue + weightLand-Kopplung) · M8.2 Bildung
+(Schulrezept → Bildungschancen) · M8.3 Verschmutzung (Layer + effektive
+Fruchtbarkeit + Zufriedenheitsmalus) · M8.4 Netze (BFS über Straßen, Rate-Faktor) ·
+M8.5 Ereignisse (Brand/Missernte im Intervall) · M8.6 Rückkopplungs-Nachweise.
 
 ## M9 – Konsolidierung (nach M8, benutzergelieferte Spec)
 
