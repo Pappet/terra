@@ -54,8 +54,16 @@ export function attachInput(canvas: HTMLCanvasElement, handler: InputHandler): I
     if (idx === mouse.lastTile) return;
     if (mouse.lastTile >= 0) {
       // Schnelle Züge interpolieren, sonst entstehen löchrige Zonen/Strassen.
-      const width = handler.getMapSize().width;
-      for (const t of lineTiles(mouse.lastTile, idx, width).slice(1)) handler.paintAt(t);
+      // Invarianten: lastTile und idx sind beide on-board (idx<0 setzt oben
+      // lastTile=-1), und Bresenham bleibt in der Bounding-Box seiner End-
+      // punkte -> die Linie kann die Karte nicht verlassen. Der Bounds-Check
+      // ist reine Verteidigung gegen einen stale lastTile nach Weltwechsel
+      // (Laden mit anderer Kartengrösse) bei gehaltener Maustaste.
+      const { width, height } = handler.getMapSize();
+      const maxIdx = width * height;
+      for (const t of lineTiles(mouse.lastTile, idx, width).slice(1)) {
+        if (t >= 0 && t < maxIdx) handler.paintAt(t);
+      }
     } else {
       handler.paintAt(idx);
     }
