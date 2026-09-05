@@ -68,7 +68,7 @@ Tasks:
 - [x] M7.4 Bankrott: Kasse < −100 → bankrupt blockiert Bau/Zonen; Erholung ab Kasse ≥ 0 — Savegame v11
 - [x] M7.5 Statistiken: Zeitreihen (Kasse, Einwohner, Zufriedenheit) als Canvas-Liniendiagramm (Taste S) — Savegame v12
 - [ ] M7.6 Speichern/Laden inkl. UI-Zustand (Geschwindigkeit, aktives Overlay; taxRate ist bereits im Savegame)
-- [ ] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (deterministisch; Hebel: taxBurdenOnSatisfaction → Wegzug → Kollaps)
+- [x] M7.7 DoD-Nachweis: schlechte Steuerpolitik ruiniert eine Stadt (m7.proof.test.ts, deterministisch)
 
 ## M8 – Tiefe (nächster Meilenstein, noch nicht zerlegt)
 

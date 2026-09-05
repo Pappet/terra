@@ -1,5 +1,13 @@
 # JOURNAL
 
+## 2026-03-05 – M7.7 DoD-Nachweis (Ruin durch Steuerpolitik)
+**Gebaut:** m7.proof.test.ts auf der erweiterten lineWorld-Fake (demographics+settleResidents+bankrupt in der Pipeline): Zwei identische Städte, einziger Unterschied Steuersatz 100 % vs. 25 %, 600 Ticks/3 Intervalle — Ruin-Stadt klarer Wegzug (8.67 < 9 Start), moderat besteuerte Stadt besser erhalten, Differenz > 0.5; deterministisch.
+**Entscheidungen + Lehren:**
+- fakes.ts um demographics-Option, settleResidents, bankrupt-Check, history erweitert — die Fake-Pipeline deckt jetzt die volle Intervall-Mechanik ab.
+- Assertions auf Differenz statt absolute Residenten-Schwellen: Sat-Oszillation durch Alterung/EMA macht Absolutwerte unzuverlässig; die Richtungs- und Größenordnungsaussage ist der DoD.
+-tests/fakes.ts braucht jetzt auch history/bankrupt/settleResidents — das Fake deckt die volle Intervall-Mechanik ab (notiert für künftige Intervall-Features: Fake mitziehen).
+**Offen:** M7.6 (UI-Zustand im Savegame) — letzter offener M7-Task.
+
 ## 2026-03-05 – M7.5 Statistiken mit Zeitreihen
 **Gebaut:** `world.history` (Sample pro Demografie-Intervall: tick/treasury/residents/durchschnittliche Zufriedenheit, max 200 Einträge, Savegame **v12**) und StatsPanel (Taste S): minimales Canvas-Liniendiagramm ohne Library, zeichnet nur bei Sichtbarkeit.
 **Entscheidungen:**
