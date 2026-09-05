@@ -56,10 +56,10 @@ DoD:
 - DoD: Eine rohstoffreiche und eine industrielle Stadt spezialisieren sich von selbst.
 
 Tasks:
-- [~] M6.1 Handels-Modell: Handelsrouten als Städtepaare (A*-Pfad, Kapazität aus Korridor), Aggregat-Flüsse (SoA)
-- [ ] M6.2 Arbitrage-Logik: Handel entsteht bei Preisdifferenz > Transportkosten; Richtungsentscheidung deterministisch
-- [ ] M6.3 Transport-Tick: Flüsse bewegen Güter (Lager ab/zu), Korridorkapazität deckelt, Verstopfung
-- [ ] M6.4 Import/Export-Bilanz pro Stadt (im Stadt-Panel), Handels-Overlay (Flusspfeile)
+- [x] M6.1 Handels-Modell: Handelsrouten als Städtepaare (A*-Pfad, Kapazität aus Korridor), Aggregat-Flüsse (SoA)
+- [x] M6.2 Arbitrage-Logik: Handel entsteht bei Preisdifferenz > Transportkosten; Richtungsentscheidung deterministisch
+- [x] M6.3 Transport-Tick: Flüsse bewegen Güter (Lager ab/zu), Korridorkapazität deckelt, Verstopfung
+- [x] M6.4 Import/Export-Bilanz pro Stadt (im Stadt-Panel), Handels-Overlay (Flusspfeile)
 - [ ] M6.5 DoD-Nachweis: rohstoffreiche und industrielle Stadt spezialisieren sich von selbst (deterministisch)
 - [x] M5.1 Güter- und Rezept-Tabellen in /src/data (Holz, Stein, Erz, Bretter, Werkzeug, Nahrung, ...), Lagerbestände pro Stadt (SoA/Float64Array)
 - [x] M5.2 Produktions-Tick: Gebäude wandeln Inputs unter Einsatz von Arbeitskraft in Outputs, engpassgetrieben

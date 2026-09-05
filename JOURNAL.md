@@ -1,5 +1,20 @@
 # JOURNAL
 
+## 2026-03-05 – M6.4 Handels-Overlay + Bilanz im Panel
+**Gebaut:** Overlay "Handel": grüne Pfeile zwischen Stadtzentren (Strichstärke log zur Mengensumme des Paares); Stadt-Panel zeigt kumulierte X/M-Bilanzen.
+**Entscheidungen:** Pfeile pro Frame gezeichnet (commute-Muster); Bilanzen als kumulierte Mengen (Preisbewertung kommt mit M7-Statistik).
+**Offen:** M6.5.
+
+## 2026-03-05 – M6.1–M6.3 Handelssystem
+**Gebaut:** `trade.ts`: pro ungeordnetem Städtepaar eine Route (A*-Pfad, Korridorkapazität), Arbitrage je Gut und Richtung (Preisdifferenz − Reisezeit×Kostenfaktor ≥ Mindestmarge), Kandidaten nach Marge priorisiert teilen sich EIN Korridorbudget (Verstopfung), Flüsse aggregiert (Mengen/Tick), kumulierte Import-/Export-Bilanzen (Savegame **v9**). World.update: Handelsticker nach Markt. Tests: Arbitrage fließt, keine Preisdifferenz → kein Handel, Korridor-Deckel mit Priorisierung, Wasser trennt, Bilanz-Roundtrip, Determinismus. 204 Tests grün.
+**Entscheidungen + Lehren:**
+- **Doppelt-Versendung-Bug:** Routen pro geordnetem Paar liessen beide Richtungen dieselbe profitable Richtung mit 2× Kapazität versenden. Fix: ein Budget pro ungeordnetem Paar, beide Richtungen konkurrieren.
+- **flows-Matrix:** ensureTradeSize füllte Zeilen mit Zahlen statt Gut-Arrays ("Cannot create property '0' on number '0'"); Struktur korrigiert, Zeilen wachsen mit (Städte werden später gegründet).
+- Fake-Pipeline braucht syncPopulation-Äquivalent (ensureCity für population/storage/market), sonst skippt updateMarket still.
+- Handel reagiert verzögert auf Preise (Drift bis Marge > Schwelle) — Tests messen in Fenstern/Fehlertoleranzen statt exakter Ticks.
+- **tests/fakes.ts** zentralisiert (Berater-Hinweis befolgt): lineWorld/addAdults für employment-, m4-/m5-proof-Tests; m5.proof-Fake nutzt production:true-Pipeline.
+**Offen:** M6.5.
+
 ## 2026-03-05 – M5.6 DoD-Nachweis + M5-Abschluss
 **Gebaut:** m5.proof.test.ts auf deterministischer lineWorld (Fake-Welt mit schlanker update-Pipeline: Zuweisung + Produktion): Kette Holzfäller→Sägewerk→Werkstatt; Ausfall des Holzfällers → Restholz läuft leer → Sägewerk still → Werkstatt kaskadiert nach (Produktionsraten vor/nach verglichen, Erz reicht reichlich). 197 Tests grün, Build grün. **M5 ist damit fertig.**
 **Entscheidungen:**
