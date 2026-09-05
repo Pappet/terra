@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M5.5 Performance-Review
+**Gebaut:** perf.test.ts mit realistischer Last: 512er-Karte, 10 Städte (Gründung, Straßenkreuz, je 5 Gebäude mit Anschluss, 60 Einwohner). Messung über 250 Ticks inkl. mindestens einem Demografie-/Migrations-/Zuweisungs-Intervall: **0.010 ms/Tick Durchschnitt, 0.766 ms teuerster Einzeltick** gegen Budget 16 ms. 
+**Entscheidungen:**
+- Kein Worker-Umzug: Budget um Faktor ~20 unterschritten; Umzug wäre verfrühte Komplexität (Guardrail: erst messen, dann optimieren). Der Test bleibt als Regressionsschutz (max-Tick-Assert) im Suite-Bestand.
+- Max-Tick statt nur Durchschnitt gemessen: Der Intervall-Tick (Demografie+Migration+Zuweisung) ist der Peak und würde vom 250-Tick-Mittel verschleiert.
+**Offen:** Worker-Umzug bleibt BACKLOG-Eintrag für den Fall, dass Karten/Städte deutlich wachsen.
+
 ## 2026-03-05 – M5.4 Finanzen + Intervall-Semantik-Bugfix
 **Gebaut:** `FINANCE` in data/cities.ts (Steuern 6/Erwachsenem/Intervall, Einkommensfaktor 0.6/1/1.6, Gebäudeunterhalt 0.01/Tick); Steuern im Demografie-Intervall kassiert (nach Einkommensgruppe), Gebäudeunterhalt im Produktionstick abgezogen. **Echter Sim-Bug dabei gefunden:** das Demografie-Intervall feuerte mit `this.tick` (VOR Inkrement), also einen Tick vor dem "abschliessenden Tick" — inkonsistent mit der currentTick-Semantik aus M3.1 und Ursache der nicht erklärbaren Kassen-Deltas. Fix: Intervall-Argument = abschliessender Tick (tick+1). Tests: Steuer-Erwartung exakt (Steuern 71.856 − Unterhalt 35.64 über 198 Ticks), Unterhalt pro Tick, Determinismus, Druck-Szenario. 194 Tests grün.
 **Entscheidungen:**

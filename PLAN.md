@@ -51,7 +51,7 @@ Tasks:
 - [x] M5.2 Produktions-Tick: Gebäude wandeln Inputs unter Einsatz von Arbeitskraft in Outputs, engpassgetrieben
 - [x] M5.3 Lokale Preise aus Angebot/Nachfrage (Preisanpassung pro Gut und Stadt, deterministisch)
 - [x] M5.4 Bau-/Unterhaltskosten an Wirtschaft koppeln (Kasse/Einnahmen aus Steuern vorbereiten)
-- [~] M5.5 Performance-Review: Tick-Zeit messen (512er-Karte, 10 Städte); ggf. Worker-Umzug
+- [x] M5.5 Performance-Review: Tick-Zeit messen (512er-Karte, 10 Städte); ggf. Worker-Umzug — 0.01 ms/Tick avg, 0.77 max: kein Umzug nötig
 - [ ] M5.6 DoD-Nachweis: Vorstufen-Engpass schlägt auf nachgelagerte Produktion durch (deterministisch)
 
 ## M6 – Handel (nächster Meilenstein, noch nicht zerlegt)
