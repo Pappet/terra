@@ -17,12 +17,13 @@ import { PathFinder } from './pathfinding';
 import { Population } from './population';
 import { Rng } from './rng';
 import { runGrowthTick } from './growth';
-import { runDemographicsTick, runMigration } from './demographics';
+import { runDemographicsTick, runMigration, computeMaxDebt } from './demographics';
 import { Storage } from './storage';
 import { assignWorkers, type EmploymentState } from './employment';
 import { runProductionTick } from './production';
 import { Market, updateMarket } from './market';
 import { createTradeState, runTradeTick, ensureTradeSize } from './trade';
+import { FINANCE } from '../data/cities';
 import { SIM_CONFIG } from '../data/config';
 import { TILE_TYPES } from '../data/tiles';
 import { DEPOSIT_DEFS } from '../data/deposits';
@@ -238,7 +239,14 @@ export class World {
   /** Ein Sim-Tick: Unterhalt für den Bestand, dann Actions, dann Route auswerten. */
   update(): void {
     this.lastRejected = null;
+    this.maxDebt = computeMaxDebt(this); // Kreditlimit aktuell halten (Actions!)
     this.treasury -= this.upkeepPerTick; // Bestand zu Tickbeginn, Bautick selbst gratis
+    // Bankrott-Prüfung (M7.4): jeder Tick, Kasse unter Grenze -> blockiert Bau
+    if (this.treasury < FINANCE.bankruptcyTreasuryLimit) {
+      this.bankrupt = true;
+    } else if (this.treasury >= 0) {
+      this.bankrupt = false;
+    }
     let roadsChanged = false;
     let routeDirty = false;
     if (this.queue.length > 0) {

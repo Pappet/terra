@@ -39,6 +39,21 @@ function sumAdults(vec: Float64Array): number {
   return sum;
 }
 
+/** Kreditlimit: maxDebtPerAdult × Erwachsene über alle Städte. */
+export function computeMaxDebt(world: World): number {
+  let adults = 0;
+  for (let cityId = 1; cityId <= world.cities.count; cityId++) {
+    const vec = world.population.city(cityId);
+    if (vec === null) continue;
+    for (let e = 0; e < EDUCATION_LEVELS; e++) {
+      for (let inc = 0; inc < INCOME_LEVELS; inc++) {
+        adults += (vec[cohortIndex(1, e, inc)] ?? 0) + (vec[cohortIndex(2, e, inc)] ?? 0);
+      }
+    }
+  }
+  return adults * FINANCE.maxDebtPerAdult;
+}
+
 /** Wohnkapazität einer Stadt (Häuser × Bewohner pro Haus). */
 export function housingCapacity(world: World, cityId: number): number {
   return housesOf(world, cityId) * GROWTH.residentsPerHouse;
@@ -105,28 +120,12 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
     world.population.perCity[cityId - 1] = next;
   }
 
-  // 2b) Kredite (M7.3/M7.4): Zins auf Restschuld, Kreditlimit, Bankrott-Prüfung
-  for (let cityId = 1; cityId <= world.cities.count; cityId++) {
-    const vec = world.population.city(cityId);
-    let adults = 0;
-    if (vec !== null) {
-      for (let e = 0; e < EDUCATION_LEVELS; e++) {
-        for (let inc = 0; inc < INCOME_LEVELS; inc++) {
-          adults += (vec[cohortIndex(1, e, inc)] ?? 0) + (vec[cohortIndex(2, e, inc)] ?? 0);
-        }
-      }
-    }
-    world.maxDebt = adults * FINANCE.maxDebtPerAdult;
-    if (world.debt > 0) {
-      const interest = world.debt * FINANCE.loanInterestPerInterval;
-      world.treasury -= interest;
-      world.debt += interest; // Zins wird kapitalisiert (Tilgung per repayLoan)
-    }
-  }
-  if (world.treasury < FINANCE.bankruptcyTreasuryLimit) {
-    world.bankrupt = true;
-  } else if (world.treasury >= 0) {
-    world.bankrupt = false; // Erholung: Kasse wieder im Plus
+  // 2b) Kredite (M7.3): Zins auf Restschuld (Bankrott-Prüfung läuft in world.update)
+  world.maxDebt = computeMaxDebt(world);
+  if (world.debt > 0) {
+    const interest = world.debt * FINANCE.loanInterestPerInterval;
+    world.treasury -= interest;
+    world.debt += interest; // Zins wird kapitalisiert (Tilgung per repayLoan)
   }
 
   // 3) Steuern (M5.4): Einnahmen nach Einwohnern und Einkommensgruppe

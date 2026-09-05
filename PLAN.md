@@ -80,3 +80,6 @@ industrielle Stadt spezialisieren sich von selbst.
 DoD: Bevölkerung als Kohorten (Alter, Bildung, Einkommen), Arbeitsplätze, Zuweisung
 Wohnort→Arbeitsplatz über den Graphen, Reisezeit/Stau wirken zurück; Zufriedenheit,
 Zuzug/Wegzug; Pendeln über Stadtgrenzen hinweg sichtbar und reaktiv.
+
+## M9 – Menschen (nächster Meilenstein, noch nicht zerlegt)
+Nach Abschluss von M8 folgt M9 aus dieser Datei (specs/M9-KONSOLIDIERUNG.md).
