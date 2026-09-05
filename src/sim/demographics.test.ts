@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { World, equalWorlds } from './world';
 import { GROWTH } from '../data/cities';
+import { MIGRATION } from '../data/demographics';
 import { AGE_TICK_INTERVAL, cohortIndex } from './population';
 import { computeSatisfaction, housingCapacity, runDemographicsTick } from './demographics';
+import { computeLandValue } from './landvalue';
 import { Rng } from './rng';
 
 function cityWithHouse(): World {
@@ -55,6 +57,13 @@ describe('M4.2 Demografie', () => {
     w.population.add(1, cohortIndex(1, 1, 0), 10);
     const before = w.population.total(1);
     w.taxRate = 0; // reine Alterung: kein Wegzug über die Steuerlast
+    // Zusätzliche Häuser: genug Kapazität, dass der Bodenwert-Bonus (M8.1) die
+    // Zufriedenheit weder unter die Wegzug- noch über die Zuzugsschwelle drückt —
+    // der Test soll reine Alterung ohne Migration prüfen.
+    for (let k = 0; k < 3; k++) {
+      const spot = findSpot(w, true);
+      w.addBuildingAt(1, spot.x, spot.y, 1);
+    }
     runDemographicsTick(w, new Rng(1), AGE_TICK_INTERVAL);
     // Gruppe 1 -> 2 (mit Sterblichkeit), Bildung wandert mit Wahrscheinlichkeit
     const vec = w.population.city(1)!;
@@ -66,6 +75,24 @@ describe('M4.2 Demografie', () => {
     // Gesamt (inkl. Geburten) >= vorherige Überlebenden
     expect(w.population.total(1)).toBeGreaterThanOrEqual(expectedSurvivors);
     void before;
+  });
+
+  it('Bodenwert koppelt in die Zufriedenheit (M8.1-Rückkopplung)', () => {
+    const a = cityWithHouse();
+    const b = cityWithHouse();
+    for (const w of [a, b]) {
+      w.population.add(1, cohortIndex(1, 0, 0), 10); // unter Vollzufriedenheit klemmen
+    }
+    // Stadt B: Fruchtbarkeit im Stadtgebiet maximal -> höherer Bodenwert
+    for (let idx = 0; idx < b.tiles.length; idx++) (b.layers.fertility as Uint8Array)[idx] = 255;
+    const satA = computeSatisfaction(a, 1);
+    const satB = computeSatisfaction(b, 1);
+    expect(satB).toBeGreaterThan(satA);
+    // Der Effekt entspricht exakt der Gewichtung (MIGRATION.weightLand)
+    expect(satB - satA).toBeCloseTo(
+      MIGRATION.weightLand * (computeLandValue(b, 1) - computeLandValue(a, 1)),
+      9,
+    );
   });
 
   it('Geburten sind durch die Wohnkapazität begrenzt', () => {

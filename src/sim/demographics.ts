@@ -15,6 +15,7 @@ import {
   cohortIndex,
 } from './population';
 import { averageCommuteTime } from './employment';
+import { computeLandValue } from './landvalue';
 import type { Rng } from './rng';
 import type { World } from './world';
 
@@ -211,6 +212,9 @@ export function computeSatisfaction(world: World, cityId: number): number {
   const housingScore = residents <= 0 ? 1 : Math.min(1, capacity / Math.max(1, residents));
 
   const taxBurden = world.taxRate * FINANCE.taxBurdenOnSatisfaction;
+  // M8.1-Rückkopplung: Bodenwert (Lage) verschiebt die Zufriedenheit symmetrisch.
+  const landBonus =
+    MIGRATION.weightLand * (computeLandValue(world, cityId) - MIGRATION.landValueNeutral);
   return Math.min(
     1,
     Math.max(
@@ -218,7 +222,8 @@ export function computeSatisfaction(world: World, cityId: number): number {
       MIGRATION.weightEmployment * employmentRatio +
         MIGRATION.weightCommute * commuteScore +
         MIGRATION.weightHousing * housingScore -
-        taxBurden,
+        taxBurden +
+        landBonus,
     ),
   );
 }

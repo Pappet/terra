@@ -37,4 +37,12 @@ export const MIGRATION = {
   departureRate: 0.15,
   /** Chance, dass Zuzug Grundbildung mitbringt (sonst keine). */
   immigrantEducationChance: 0.7,
+  /**
+   * Gewichtung des Bodenwerts (M8.1-Rückkopplung). Der Bonus ist symmetrisch
+   * um den neutralen Index (landValueNeutral): gute Lage erhöht die
+   * Zufriedenheit, schlechte senkt sie.
+   */
+  weightLand: 0.1,
+  /** Bodenwert-Index, der als neutral (kein Bonus/Malus) gilt. */
+  landValueNeutral: 0.5,
 } as const;
