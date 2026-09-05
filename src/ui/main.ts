@@ -90,6 +90,12 @@ function applySpeed(speed: number): void {
   hud.setActiveSpeed(loop.speed);
 }
 
+function applyUi(ui: { speed?: number; overlay?: string } | null): void {
+  if (ui === null) return;
+  if (typeof ui.speed === 'number') applySpeed(ui.speed);
+  if (typeof ui.overlay === 'string') applyOverlay(ui.overlay);
+}
+
 function applyLoadedWorld(next: World): void {
   loop.setWorld(next);
   renderer.setWorld(next);
@@ -126,22 +132,28 @@ const hud = new Hud(hudContainer, {
     hud.setActivePaintTile(tileId);
   },
   onSave: () => {
-    saveToBrowser(currentWorld)
+    saveToBrowser(currentWorld, { speed: loop.speed, overlay: activeOverlay })
       .then(() => hud.flash(`Gespeichert (Tick ${currentWorld.tick})`))
       .catch((err: unknown) => hud.flash(`Speichern fehlgeschlagen: ${String(err)}`));
   },
   onLoad: () => {
     loadFromBrowser()
-      .then(applyLoadedWorld)
+      .then(({ world, ui }) => {
+        applyLoadedWorld(world);
+        applyUi(ui);
+      })
       .catch((err: unknown) => hud.flash(`Laden fehlgeschlagen: ${String(err)}`));
   },
   onExport: () => {
-    exportToFile(currentWorld);
+    exportToFile(currentWorld, { speed: loop.speed, overlay: activeOverlay });
     hud.flash('Export gestartet');
   },
   onImport: (file) => {
     importFromFile(file)
-      .then(applyLoadedWorld)
+      .then(({ world, ui }) => {
+        applyLoadedWorld(world);
+        applyUi(ui);
+      })
       .catch((err: unknown) => hud.flash(`Import fehlgeschlagen: ${String(err)}`));
   },
 });
