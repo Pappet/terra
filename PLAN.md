@@ -102,6 +102,15 @@ von Stadt und Tile über das Auswahl-Werkzeug, Inspektor mit Tab-Registry
 (ein neues Panel = ein Registry-Eintrag), Design-Tokens statt Ad-hoc-Farben,
 261 Tests grün, Golden-Master-Hash unverändert.
 
+## M10.1 – Demografie-Fix (ABGESCHLOSSEN)
+
+Aus dem ersten längeren Spiellauf: Städte vergreisten auf ~89 % Rentner und
+gingen zwangsläufig bankrott. Ursachen: (1) pro Intervall rückte die ganze
+Kohorte eine Altersgruppe weiter, obwohl die Gruppen 15/25/25 Jahre breit sind;
+(2) Geburtenrate unter Bestandserhalt. Fix: `ageSpanIntervals` als Datenwert,
+anteilige Alterung, Geburtenrate 0.08 → 0.03. Gleichgewicht jetzt ~61 %
+erwerbsfähig. Golden Master neu (ab002ae38e707ac6, Begründung im JOURNAL).
+
 ## M10 – Vorschlag (aus den Schwächen der Konsolidierung abgeleitet)
 
 Thema: Sichtbarkeit + Wirtschaftliche Tiefe (keine neuen Subsysteme, sondern die

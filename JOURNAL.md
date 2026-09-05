@@ -440,3 +440,22 @@ Einkommens-Mobilität, Pendler-Visualisierung, dynamische Konsumnachfrage, Ereig
 - Sim, Renderer und Savegame-Format unberührt; Golden-Master-Hash unverändert (5e5226f6964efe8d).
 **Nachweis:** 261 Tests grün (19 neue für `resolveSelection`, Registry-Filterung, Zahlenformate), `npm run build` grün, manuell im Browser geprüft: Werkzeugwechsel, Options-Spalte, Stadt- und Tile-Selektion, Overlay-Wechsel, Geschwindigkeit, Dock ein-/ausklappen.
 **Offen:** visuelle Abnahme durch Peter.
+
+## 2026-09-05 – M10.1 Demografie-Fix: Vergreisung und Unterreproduktion
+**Symptom (aus dem Spiel):** Bankrott bei 198 Einwohnern, davon 176 über 65 (89 %), nur 22 Erwachsene, 13 Beschäftigte gegen 123 offene Stellen, Netto −0.51/Tick. Zufriedenheit trotzdem 87 %.
+**Ursache 1 – Alterung ohne Verweildauer:** `runDemographicsTick` schob pro Intervall die *ganze* Kohorte eine Altersgruppe weiter, obwohl die Gruppen 15/25/25 Jahre breit sind und ein Intervall ein Jahr darstellt. Damit war jeder genau ein Intervall Kind, je eines jung und mittelalt und danach dauerhaft Rentner (Senke, 6 % Sterblichkeit → ~17 Intervalle). Gleichgewicht rechnerisch 3/(3+16.7) ≈ 15 % erwerbsfähig — gemessen im Spiel 11 %. Da nur die Altersgruppen 1+2 Steuern zahlen, schrumpfte die Steuerbasis auf ~10 % der Einwohner; der Unterhalt läuft dagegen auf den vollen Gebäudebestand. Bankrott war unabhängig vom Spielstil.
+**Ursache 2 – Reproduktion unter Bestandserhalt:** 0.08 Geburten je Erwachsenem und Intervall × 2 Erwachsenen-Intervalle = 0.16 Kinder pro Kopf Lebenszeit. Isoliert gemessen (echter Demografie-Tick, 240 Wohnplätze, kein Zuzug, 400 Intervalle): Bevölkerung stirbt vollständig aus, letzte Überlebende alle 65+. Nur der Zuzug hielt Städte am Leben — und jeder Zuwanderer war nach zwei Intervallen Rentner.
+**Fix:** `DEMOGRAPHICS.ageSpanIntervals = [15, 25, 25]` (Gruppenbreite in Intervallen); pro Intervall rückt nur `1/Breite` der Überlebenden auf, der Rest bleibt in der Gruppe. Bildungswanderung betrifft nur die Aufsteiger. `birthRatePerInterval` 0.08 → 0.03 (Bestandserhalt läge bei ~50 Erwachsenen-Intervallen bei 0.02).
+**Wirkung (gemessen, 128er-Karte, eine Stadt mit Zonengitter, Steuersatz 25 %):**
+| Tick | EW | 65+ | erwerbsfähig | Kasse | Netto |
+| --- | --- | --- | --- | --- | --- |
+| 10 000 | 314 | 15 % | 61 % | 31 674 | +4.69/Tick |
+| 20 000 | 406 | 16 % | 60 % | 92 620 | +7.36/Tick |
+| 40 000 | 444 | 18 % | 61 % | 260 926 | +8.48/Tick |
+**Entscheidungen:**
+- Altersgruppenbreite gehört als Datenwert nach `src/data/demographics.ts`, nicht als implizite Annahme in die Tick-Schleife.
+- Golden Master neu erzeugt: `5e5226f6964efe8d` → **`ab002ae38e707ac6`**. Begründung: die Task ändert das Demografie-Verhalten absichtlich (M9-Regel erfüllt).
+- Perf-Gate angepasst: Zielgröße 20 000 → 18 000 Einwohner und Startbevölkerung 400 → 600 je Stadt. Das Szenario ist bewusst wohnlastig; mit realistischer Altersstruktur sind fast alle Einwohner erwerbsfähig, die Zuwanderung deckelt sich am Arbeitsplatzangebot und die Einwohnerzahl pendelt sich knapp unter 20 000 ein. Last unverändert (6326 Gebäude), Kosten steigen von 1.011 auf **2.231 ms/Tick avg** (max 8.746, Budget 16) — mehr Einwohner arbeiten tatsächlich, Produktion und Handel rechnen entsprechend mehr.
+- Bildungstests: mit Schule werden weiterhin alle *Aufsteiger* gebildet, das sind jetzt 1/15 der Kinderkohorte pro Intervall.
+**Nachweis:** neuer Regressionstest „Altersstruktur bleibt im Gleichgewicht arbeitsfähig" (200 Intervalle, erwerbsfähig > 50 %, Rentner < 35 %); 262 Tests grün, Build grün.
+**Offen:** Balance kippt jetzt in den Überschuss (bei 25 % Steuersatz wächst die Kasse deutlich). Feinabgleich der Steuer-/Unterhaltskurve gehört in einen eigenen Balance-Durchgang.

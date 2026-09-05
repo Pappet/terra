@@ -135,6 +135,14 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
             next[target] = (next[target] ?? 0) + survivors;
             continue;
           }
+          // Nur der Anteil 1/Gruppenbreite rückt auf; der Rest bleibt in der
+          // Gruppe. Ohne das wäre die Verweildauer jeder Gruppe ein Intervall
+          // und die Bevölkerung sammelte sich in der Rentner-Senke (M10.1).
+          const span = DEMOGRAPHICS.ageSpanIntervals[age] ?? 1;
+          const movers = survivors / span;
+          const stayers = survivors - movers;
+          const stay = cohortIndex(age, e, inc);
+          next[stay] = (next[stay] ?? 0) + stayers;
           let newEdu = e;
           if (age === 0) {
             newEdu = rng.chance(childChance) ? Math.max(1, e) : e;
@@ -142,7 +150,7 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
             if (rng.chance(higherChance)) newEdu = Math.min(EDUCATION_LEVELS - 1, e + 1);
           }
           const target = cohortIndex(age + 1, newEdu, inc);
-          next[target] = (next[target] ?? 0) + survivors;
+          next[target] = (next[target] ?? 0) + movers;
         }
       }
     }

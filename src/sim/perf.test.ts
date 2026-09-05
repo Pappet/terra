@@ -11,7 +11,13 @@ import { cohortIndex } from './population';
  */
 
 const TARGET_BUILDINGS = 2000;
-const TARGET_RESIDENTS = 20000;
+/**
+ * Seit M10.1 (realistische Altersstruktur) sind fast alle Einwohner
+ * erwerbsfähig. Dieses bewusst wohnlastige Szenario bietet zu wenige Jobs,
+ * die Einwohnerzahl pendelt sich deshalb knapp unter 20 000 ein — die Last
+ * (Gebäude, Kohorten, Pendler, Handel) bleibt unverändert hoch.
+ */
+const TARGET_RESIDENTS = 18000;
 const CITY_COUNT = 40;
 const REGION = 480; // Siedlungsregion (Kacheln) — ganze Karte
 const MEASURE_TICKS = 500;
@@ -102,7 +108,11 @@ function buildScenario(): World {
       if (tile === null) break;
       w.addBuildingAt(c, tile % w.width, Math.floor(tile / w.width), type, recipe);
     }
-    w.settleResidents(c, cohortIndex(1, 0, 0), 400);
+    // Zielgrösse direkt ansiedeln: das Perf-Gate misst Last, nicht Balance.
+    // Seit M10.1 (realistische Altersstruktur) sind fast alle Einwohner
+    // erwerbsfähig; die Zuwanderung deckelt sich dann am Arbeitsplatzangebot
+    // dieses bewusst wohnlastigen Szenarios.
+    w.settleResidents(c, cohortIndex(1, 0, 0), 600);
   }
   w.update();
   return w;
@@ -126,7 +136,7 @@ describe('M9.2 Perf-Gate (echte Last)', () => {
       const growMs = performance.now() - tGrow0;
       const residents = totalResidents(w);
       console.log(
-        `[perf] Wachstumsphase: 700 Ticks in ${growMs.toFixed(0)} ms -> Gebäude ${w.buildings.count}, Einwohner ${Math.round(residents)}`,
+        `[perf] Wachstumsphase: ${warmup} Ticks in ${growMs.toFixed(0)} ms -> Gebäude ${w.buildings.count}, Einwohner ${Math.round(residents)}`,
       );
       expect(w.buildings.count).toBeGreaterThanOrEqual(TARGET_BUILDINGS);
       expect(residents).toBeGreaterThanOrEqual(TARGET_RESIDENTS);

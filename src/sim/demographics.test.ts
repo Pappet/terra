@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { World, equalWorlds } from './world';
 import { GROWTH } from '../data/cities';
-import { MIGRATION } from '../data/demographics';
+import { DEMOGRAPHICS, MIGRATION } from '../data/demographics';
 import { AGE_TICK_INTERVAL, cohortIndex } from './population';
 import { computeSatisfaction, housingCapacity, runDemographicsTick } from './demographics';
 import { computeLandValue } from './landvalue';
@@ -65,13 +65,15 @@ describe('M4.2 Demografie', () => {
       w.addBuildingAt(1, spot.x, spot.y, 1);
     }
     runDemographicsTick(w, new Rng(1), AGE_TICK_INTERVAL);
-    // Gruppe 1 -> 2 (mit Sterblichkeit), Bildung wandert mit Wahrscheinlichkeit
+    // Gruppe 1 -> 2 (mit Sterblichkeit), Bildung wandert mit Wahrscheinlichkeit.
+    // Pro Intervall rückt nur 1/Gruppenbreite auf (M10.1), der Rest bleibt.
     const vec = w.population.city(1)!;
-    const inGroup1 = vec[cohortIndex(1, 1, 0)] as number;
-    expect(inGroup1).toBe(0);
-    const moved = (vec[cohortIndex(2, 1, 0)] as number) + (vec[cohortIndex(2, 2, 0)] as number);
+    const span = DEMOGRAPHICS.ageSpanIntervals[1] as number;
     const expectedSurvivors = 10 * (1 - 0.002); // Sterblichkeit Gruppe 1
-    expect(moved).toBeCloseTo(expectedSurvivors, 9);
+    const stayed = vec[cohortIndex(1, 1, 0)] as number;
+    expect(stayed).toBeCloseTo(expectedSurvivors * (1 - 1 / span), 9);
+    const moved = (vec[cohortIndex(2, 1, 0)] as number) + (vec[cohortIndex(2, 2, 0)] as number);
+    expect(moved).toBeCloseTo(expectedSurvivors / span, 9);
     // Gesamt (inkl. Geburten) >= vorherige Überlebenden
     expect(w.population.total(1)).toBeGreaterThanOrEqual(expectedSurvivors);
     void before;
@@ -110,6 +112,35 @@ describe('M4.2 Demografie', () => {
     w.population.add(1, cohortIndex(1, 0, 0), 10);
     for (let t = 0; t < AGE_TICK_INTERVAL * 20; t++) w.update();
     expect(w.population.total(1)).toBeLessThan(10); // Sterblichkeit wirkt, Geburten nicht
+  });
+
+  it('Altersstruktur bleibt im Gleichgewicht arbeitsfähig', () => {
+    // Regression zu M10.1: vorher rückte pro Intervall die GANZE Kohorte eine
+    // Altersgruppe weiter. Damit war man 2 Intervalle erwerbsfähig und danach
+    // ~17 Intervalle Rentner -> ~85 % Rentner, Steuerbasis ~10 % der Einwohner.
+    const w = cityWithHouse();
+    w.taxRate = 0;
+    for (let k = 0; k < 60; k++) {
+      const spot = findSpot(w, false);
+      w.addBuildingAt(1, spot.x, spot.y, 1);
+    }
+    w.population.add(1, cohortIndex(1, 1, 0), 40);
+    const rng = new Rng(9);
+    for (let i = 1; i <= 200; i++) runDemographicsTick(w, rng, i * AGE_TICK_INTERVAL);
+
+    const vec = w.population.city(1)!;
+    const byAge = [0, 0, 0, 0];
+    for (let age = 0; age < 4; age++) {
+      for (let e = 0; e < 3; e++) {
+        for (let inc = 0; inc < 3; inc++) byAge[age]! += vec[cohortIndex(age, e, inc)] ?? 0;
+      }
+    }
+    const total = byAge.reduce((sum, v) => sum + v, 0);
+    expect(total).toBeGreaterThan(0);
+    const workingAge = (byAge[1]! + byAge[2]!) / total;
+    const retired = byAge[3]! / total;
+    expect(workingAge).toBeGreaterThan(0.5);
+    expect(retired).toBeLessThan(0.35);
   });
 
   it('sterbliche älteste Gruppe dünnt aus', () => {

@@ -6,8 +6,23 @@
 export const AGE_TICK_INTERVAL = 200;
 
 export const DEMOGRAPHICS = {
-  /** Geburten pro Erwachsenem (Altersgruppen 1+2) pro Intervall. */
-  birthRatePerInterval: 0.08,
+  /**
+   * Breite der Altersgruppen 0-14, 15-39, 40-64 in Intervallen ("Jahren").
+   * Pro Intervall rückt nur der Kehrwert davon in die nächste Gruppe auf —
+   * sonst ist man unabhängig von der Gruppenbreite genau ein Intervall lang
+   * Kind und je eines lang jung bzw. mittelalt, während die Rentnergruppe als
+   * Senke ~17 Intervalle hält (M10.1: Ursache der Vergreisung).
+   * Die letzte Gruppe (65+) hat keine Breite, sie dünnt nur über die
+   * Sterblichkeit aus.
+   */
+  ageSpanIntervals: [15, 25, 25],
+  /**
+   * Geburten pro Erwachsenem (Altersgruppen 1+2) pro Intervall. Mit ~50
+   * Erwachsenen-Intervallen entspricht 0.02 exakt dem Bestandserhalt; 0.03
+   * lässt eine Stadt wachsen, solange Wohnraum da ist (die Wohnkapazität
+   * deckelt ohnehin).
+   */
+  birthRatePerInterval: 0.03,
   /** Sterberate pro Intervall je Altersgruppe. */
   mortalityPerInterval: [0.004, 0.002, 0.008, 0.06],
   /** Chance, dass ein Kind beim Erwachsenwerden Grundbildung bekommt. */

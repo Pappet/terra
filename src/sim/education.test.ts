@@ -78,8 +78,12 @@ describe('M8.2 Bildung', () => {
     };
     const without = run(false);
     const withSchool = run(true);
-    // Mit Schule Chance 1.0: alle Überlebenden der Kinder-Kohorten gebildet
-    expect(withSchool).toBeCloseTo(40 * (1 - DEMOGRAPHICS.mortalityPerInterval[0]!), 6);
+    // Mit Schule Chance 1.0: alle Aufsteiger der Kinder-Kohorten gebildet.
+    // Pro Intervall rückt 1/Gruppenbreite auf (M10.1).
+    expect(withSchool).toBeCloseTo(
+      (40 * (1 - DEMOGRAPHICS.mortalityPerInterval[0]!)) / DEMOGRAPHICS.ageSpanIntervals[0]!,
+      6,
+    );
     expect(withSchool).toBeGreaterThan(without);
     // deterministisch: gleicher Lauf, gleiches Ergebnis
     expect(run(true)).toBe(withSchool);
@@ -96,6 +100,9 @@ describe('M8.2 Bildung', () => {
     w.addBuildingAt(1, cx + 2, cy, 2, RECIPE_SCHOOL);
     w.addBuildingAt(1, cx + 3, cy, 2, RECIPE_SCHOOL); // über dem Cap
     runDemographicsTick(w, new Rng(4), AGE_TICK_INTERVAL);
-    expect(educatedAdults(w)).toBeCloseTo(40 * (1 - DEMOGRAPHICS.mortalityPerInterval[0]!), 6);
+    expect(educatedAdults(w)).toBeCloseTo(
+      (40 * (1 - DEMOGRAPHICS.mortalityPerInterval[0]!)) / DEMOGRAPHICS.ageSpanIntervals[0]!,
+      6,
+    );
   });
 });
