@@ -45,7 +45,7 @@ Performance-Review: 0.01 ms/Tick avg / 0.77 ms max bei 512er+10 Städten — kei
 DoD-Test m5.proof.test.ts (Engpass-Kaskade über zwei Stufen).
 Tasks: M5.1 Güter/Lager · M5.2 Produktion · M5.3 Preise · M5.4 Finanzen · M5.5 Performance · M5.6 Nachweis.
 
-## M6 – Handel (AKTUELL)
+## M6 – Handel (ABGESCHLOSSEN)
 
 DoD:
 - Güterflüsse zwischen Städten entlang des Netzes.

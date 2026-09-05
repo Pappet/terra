@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M6.5 DoD-Nachweis + M6-Abschluss
+**Gebaut:** m6.proof.test.ts: Holzfäller-Stadt A, Sägewerk+Werkstatt-Stadt B. Über 300 Ticks: A exportiert Holz (>5 Einheiten), B importiert es und produziert Bretter; Preis-Asymmetrie (B-Holz teurer als A-Holz) hält sich selbst; Spezialisierung strukturell geprüft (A nur Extraktionsrezepte, B nur Verarbeitungsrezepte); B's Bretter-Überschuss fließt per Arbitrage zurück nach A (Preis-Boden). Gegenprobe: Wasser trennt die Städte → keine Importe, Industrie läuft in den Engpass-Stillstand. Determinismus geprüft. 207 Tests grün, Build grün. **M6 ist damit fertig.**
+**Entscheidungen + Lehren:**
+- Spezialisierung ist strukturell (Gebäuderezepte) + handelsökonomisch (Flussrichtung) geprüft; die Behauptung "A produziert keine Bretter" war falsch formuliert — A IMPORTIERT Bretter (Preis-Boden macht Arbitrage profitabel). assertion an Systemverhalten angepasst statt am Wunsch.
+- Werkstatt blieb im Test ohne Volllast (12-Arbeiter-Limit, M4.3-Zuweisung) — keine Handelsfrage; dokumentiert statt behoben (M7/M8 können Prioritäten gewichten).
+**Offen:** M7 (Verwaltung) — Zerlegung folgt.
+
 ## 2026-03-05 – M6.4 Handels-Overlay + Bilanz im Panel
 **Gebaut:** Overlay "Handel": grüne Pfeile zwischen Stadtzentren (Strichstärke log zur Mengensumme des Paares); Stadt-Panel zeigt kumulierte X/M-Bilanzen.
 **Entscheidungen:** Pfeile pro Frame gezeichnet (commute-Muster); Bilanzen als kumulierte Mengen (Preisbewertung kommt mit M7-Statistik).
