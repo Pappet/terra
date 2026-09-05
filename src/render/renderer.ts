@@ -95,9 +95,42 @@ export class Renderer {
     if (overlayId === 'commute') {
       this.drawCommuteLines(camera, world);
     }
+    if (overlayId === 'trade') {
+      this.drawTradeArrows(camera, world);
+    }
     ctx.strokeStyle = '#3d4652';
     ctx.lineWidth = 1;
     ctx.strokeRect(topLeft.x - 0.5, topLeft.y - 0.5, mapWpx + 1, mapHpx + 1);
+  }
+
+  /** Handelsflüsse als Pfeile zwischen Stadtzentren; Strichstärke ∞ Mengen. */
+  private drawTradeArrows(camera: Camera, world: World): void {
+    const ctx = this.ctx;
+    for (const route of world.trade.routes) {
+      // Summe der Güter auf diesem Paar (letzte Tick-Flüsse, beide Richtungen)
+      const rowAB = world.trade.flows[route.from - 1]?.[route.to - 1];
+      const rowBA = world.trade.flows[route.to - 1]?.[route.from - 1];
+      let total = 0;
+      for (const row of [rowAB, rowBA]) {
+        if (row === undefined) continue;
+        for (const v of row) total += v ?? 0;
+      }
+      if (total <= 0) continue;
+      const from = camera.worldToScreen(
+        (world.cities.x[route.from - 1] ?? 0) + 0.5,
+        (world.cities.y[route.from - 1] ?? 0) + 0.5,
+      );
+      const to = camera.worldToScreen(
+        (world.cities.x[route.to - 1] ?? 0) + 0.5,
+        (world.cities.y[route.to - 1] ?? 0) + 0.5,
+      );
+      ctx.strokeStyle = 'rgba(154, 200, 120, 0.8)';
+      ctx.lineWidth = Math.min(8, Math.max(1, Math.log2(1 + total) * 1.5));
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    }
   }
 
   /** Pendlerflüsse als Linien zwischen Stadtzentren; Strichstärke ∝ Fluss. */

@@ -169,6 +169,8 @@ export class Hud {
       residents: number;
       jobs: number;
       satisfaction: number;
+      exports: number;
+      imports: number;
       residential: number;
       commercial: number;
       industrial: number;
@@ -198,7 +200,8 @@ export class Hud {
         row.textContent =
           `${entry.name}: ${entry.residents} EW, ${entry.jobs} Jobs, Zf ${Math.round(entry.satisfaction * 100)}% | ` +
           `R${entry.houses} C${entry.shops} I${entry.factories} | ` +
-          `Nf ${Math.round(entry.residential * 100)}/${Math.round(entry.commercial * 100)}/${Math.round(entry.industrial * 100)}%`;
+          `Nf ${Math.round(entry.residential * 100)}/${Math.round(entry.commercial * 100)}/${Math.round(entry.industrial * 100)}% | ` +
+          `X ${Math.round(entry.exports)} / M ${Math.round(entry.imports)}`;
         row.title = 'Klicken: Kamera auf das Stadtzentrum';
         row.addEventListener('click', () => onJump(entry.id));
         return row;

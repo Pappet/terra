@@ -11,6 +11,7 @@ import { Renderer } from '../render/renderer';
 import { SimLoop } from '../sim/loop';
 import { computeDemand, computeStats } from '../sim/demand';
 import { computeSatisfaction } from '../sim/demographics';
+import { exportBalance, importBalance } from '../sim/trade';
 import { World } from '../sim/world';
 import { exportToFile, importFromFile, loadFromBrowser, saveToBrowser } from '../persist/save';
 import { Hud } from './hud';
@@ -213,6 +214,8 @@ function updateCityPanel(): void {
       residents,
       jobs,
       satisfaction: computeSatisfaction(currentWorld, c),
+      exports: exportBalance(currentWorld, c),
+      imports: importBalance(currentWorld, c),
       residential: demand.residential,
       commercial: demand.commercial,
       industrial: demand.industrial,
