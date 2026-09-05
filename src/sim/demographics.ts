@@ -6,7 +6,7 @@
  * Deterministisch über den Welt-RNG.
  */
 import { DEMOGRAPHICS, MIGRATION } from '../data/demographics';
-import { GROWTH } from '../data/cities';
+import { FINANCE, GROWTH } from '../data/cities';
 import {
   AGE_BRACKETS,
   AGE_TICK_INTERVAL,
@@ -105,7 +105,22 @@ export function runDemographicsTick(world: World, rng: Rng, tick: number): boole
     world.population.perCity[cityId - 1] = next;
   }
 
-  // 3) Migration (M4.5) läuft im selben Intervall
+  // 3) Steuern (M5.4): Einnahmen nach Einwohnern und Einkommensgruppe
+  for (let cityId = 1; cityId <= world.cities.count; cityId++) {
+    const vec = world.population.city(cityId);
+    if (vec === null) continue;
+    let taxes = 0;
+    for (let e = 0; e < EDUCATION_LEVELS; e++) {
+      for (let inc = 0; inc < INCOME_LEVELS; inc++) {
+        const adults =
+          (vec[cohortIndex(1, e, inc)] ?? 0) + (vec[cohortIndex(2, e, inc)] ?? 0);
+        taxes += adults * FINANCE.taxPerAdultPerInterval * (FINANCE.incomeFactor[inc] ?? 1);
+      }
+    }
+    world.treasury += taxes;
+  }
+
+  // 4) Migration (M4.5) läuft im selben Intervall
   runMigration(world, rng);
   return true;
 }

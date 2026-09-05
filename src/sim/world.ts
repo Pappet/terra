@@ -253,7 +253,7 @@ export class World {
       }
     }
     runGrowthTick(this, this.rng);
-    if (runDemographicsTick(this, this.rng, this.tick)) {
+    if (runDemographicsTick(this, this.rng, this.tick + 1)) { // abschliessender Tick
       runMigration(this, this.rng);
       this.commuteDirty = true;
     }

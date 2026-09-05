@@ -1,5 +1,12 @@
 # JOURNAL
 
+## 2026-03-05 – M5.3 Lokale Preise
+**Gebaut:** `Market` (Preise + EMA der Produktions-/Verbrauchsraten pro Stadt × Gut) und `updateMarket`: Druck = Nachfrage (Verbrauch-EMA + Grundnachfrage) / Angebot (Produktions-EMA + Lager/targetStock); Preis nähert sich basePrice × clamp(Druck, 0.5, 2) gedämpft an. Produktionstick liefert jetzt Güterflüsse (produced/consumed pro Stadt) an den Markt. Savegame **v8** (Marktvektoren serialisiert). Tests: Startpreise, Nachfrageüberschuss (Nahrung über Basis), Angebotsüberschuss (Holz unter Basis), Klemmen, Roundtrip, Determinismus. 189 Tests grün.
+**Entscheidungen:**
+- Grundnachfrage pro Gut in data/goods.ts: Güter ohne Verbraucher bekommen einen Preis-Boden (sonst kollabiert der Preis auf ε und M6-Handel kann nie lohnen).
+- Preise sind deterministischer Zustand (in equalWorlds via Savegame-JSON gleich); Druckformel bewusst einfach (Nachfrage/(Produktion+Lageranteil)) — Elastizitäten kommen, wenn M6-Handel daraus entscheidet.
+**Offen:** M5.4 Kasse, M5.5 Performance-Review, M5.6 Engpass-Nachweis (formal).
+
 ## 2026-03-05 – M5.2 Produktionstick + Rezeptauswahl (D006)
 **Gebaut:** `Recipe.requires` (datengetriebene Umgebungsfilter: deposit-Bits/Forest/fertility mit Radius), `buildings.recipe`-SoA-Spalte (Savegame validiert), `chooseRecipe` (Umgebungsfilter → Kettenausgleich: wenigste Produzenten, Tie-Break ID), `runProductionTick` (beschäftigte Arbeiter in fester Gebäude-Reihenfolge zugeteilt, Rate = Arbeitsanteil, fehlender Input stoppt Output komplett). Tests: Kette baut sich selbst (Holzfäller→Sägewerk→Werkstatt), Umgebungsfilter, Produktion mit Arbeitern, Engpass (2 Sägewerke frieren bei leerem Holz-Lager ein), kein Arbeiter → kein Output, Determinismus. 183 Tests grün.
 **Entscheidungen:**

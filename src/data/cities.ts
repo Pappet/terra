@@ -18,6 +18,19 @@ export const ZONE_TYPES = {
   industrial: 3,
 } as const;
 
+/**
+ * Finanzen (M5.4): Steuern pro Erwachsenem und Intervall (nach Einkommens-
+ * gruppe faktoriert) gegen den laufenden Unterhalt (Strassen + Gebäude).
+ */
+export const FINANCE = {
+  /** Steuern pro Erwachsenem und Demografie-Intervall (200 Ticks). */
+  taxPerAdultPerInterval: 6,
+  /** Einkommens-Faktor je Gruppe (niedrig/mittel/hoch). */
+  incomeFactor: [0.6, 1.0, 1.6],
+  /** Unterhalt pro Gebäude und Tick. */
+  buildingUpkeepPerTick: 0.01,
+} as const;
+
 /** Gebäudetypen folgen den Zonen (1 R, 2 C, 3 I). Farben fürs Kartenbild. */
 export const BUILDING_COLORS: ReadonlyMap<number, string> = new Map([
   [1, '#7a9a6a'],

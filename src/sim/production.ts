@@ -9,6 +9,7 @@
  * besetzten Arbeitskraft. Deterministisch, kein Zufall.
  */
 import { RECIPES, RECIPE_BY_ID, type Recipe, type RecipeRequirement } from '../data/goods';
+import { FINANCE } from '../data/cities';
 import type { TickFlows } from './market';
 import type { World } from './world';
 
@@ -59,6 +60,8 @@ export function chooseRecipe(world: World, cityId: number, idx: number, building
 /** Ein Produktionstick; liefert die Güterflüsse pro Stadt für den Markt. */
 export function runProductionTick(world: World): Map<number, TickFlows> {
   const flows = new Map<number, TickFlows>();
+  // Gebäudeunterhalt (M5.4): laufende Kosten neben dem Strassennetz
+  world.treasury -= world.buildings.count * FINANCE.buildingUpkeepPerTick;
   for (let cityId = 1; cityId <= world.cities.count; cityId++) {
     let workers = world.commute?.employed[cityId - 1] ?? 0;
     if (workers <= 0) continue;

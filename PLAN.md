@@ -49,8 +49,8 @@ DoD:
 Tasks:
 - [x] M5.1 Güter- und Rezept-Tabellen in /src/data (Holz, Stein, Erz, Bretter, Werkzeug, Nahrung, ...), Lagerbestände pro Stadt (SoA/Float64Array)
 - [x] M5.2 Produktions-Tick: Gebäude wandeln Inputs unter Einsatz von Arbeitskraft in Outputs, engpassgetrieben
-- [~] M5.3 Lokale Preise aus Angebot/Nachfrage (Preisanpassung pro Gut und Stadt, deterministisch)
-- [ ] M5.4 Bau-/Unterhaltskosten an Wirtschaft koppeln (Kasse/Einnahmen aus Steuern vorbereiten)
+- [x] M5.3 Lokale Preise aus Angebot/Nachfrage (Preisanpassung pro Gut und Stadt, deterministisch)
+- [~] M5.4 Bau-/Unterhaltskosten an Wirtschaft koppeln (Kasse/Einnahmen aus Steuern vorbereiten)
 - [ ] M5.5 Performance-Review: Tick-Zeit messen (512er-Karte, 10 Städte); ggf. Worker-Umzug
 - [ ] M5.6 DoD-Nachweis: Vorstufen-Engpass schlägt auf nachgelagerte Produktion durch (deterministisch)
 
